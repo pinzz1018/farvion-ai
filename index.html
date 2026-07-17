@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Farvion — Your AI Coding Companion</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root{
+    --cream: #F4F1EA;
+    --cream-2: #EDE9DF;
+    --paper: #FBFAF7;
+    --ink: #2B2620;
+    --ink-soft: #5B5347;
+    --terracotta: #D97757;
+    --terracotta-deep: #BD5F42;
+    --terracotta-pale: #F0DBCE;
+    --line: #E1DACB;
+    --success: #6B8F71;
+    --danger: #C0574A;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    margin:0; padding:0; height:100%;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #app{
+    display:flex;
+    height:100vh;
+    width:100vw;
+    overflow:hidden;
+  }
+
+  /* ---------- SIDEBAR ---------- */
+  .sidebar-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(43,38,32,0.28);
+    z-index: 40;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease;
+  }
+  .sidebar-overlay.open{
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sidebar{
+    position: fixed;
+    top:0; left:0; bottom:0;
+    width: 280px;
+    min-width: 280px;
+    background: var(--cream-2);
+    border-right: 1px solid var(--line);
+    display:flex;
+    flex-direction:column;
+    padding: 20px 16px;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform .22s ease;
+  }
+  .sidebar.open{
+    transform: translateX(0);
+    box-shadow: 8px 0 24px rgba(43,38,32,0.10);
+  }
+
+  .sidebar-top{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    padding: 4px 4px 18px 4px;
+  }
+
+  .close-sidebar-btn{
+    width: 32px; height:32px;
+    border-radius: 9px;
+    border: none;
+    background: transparent;
+    color: var(--ink-soft);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    transition: background .15s ease;
+  }
+  .close-sidebar-btn:hover{ background: rgba(43,38,32,0.06); }
+
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+
+  .brand-mark{
+    width:34px; height:34px;
+    border-radius:9px;
+    background: linear-gradient(135deg, var(--terracotta), var(--terracotta-deep));
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    box-shadow: 0 2px 6px rgba(189,95,66,0.25);
+  }
+  .brand-mark svg{ width:18px; height:18px; }
+
+  .brand-name{
+    font-family:'Source Serif 4', serif;
+    font-weight:700;
+    font-size: 19px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .brand-sub{
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: -2px;
+  }
+
+  .new-chat-btn{
+    display:flex; align-items:center; gap:8px;
+    background: var(--terracotta);
+    border: none;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor:pointer;
+    transition: all .15s ease;
+    margin-bottom: 18px;
+    width: 100%;
+    justify-content: center;
+  }
+  .new-chat-btn:hover{ background: var(--terracotta-deep); }
+
+  .side-section-label{
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    font-weight: 600;
+    padding: 4px 8px;
+    margin-top: 6px;
+  }
+
+  .history-item{
+    padding: 9px 10px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    cursor:pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background .12s ease;
+  }
+  .history-item:hover{ background: rgba(217,119,87,0.09); color: var(--ink); }
+  .history-item.active{ background: var(--terracotta-pale); color: var(--terracotta-deep); font-weight: 500; }
+
+  .sidebar-footer{
+    margin-top:auto;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+
+  .api-status{
+    display:flex; align-items:center; gap:8px;
+    padding: 10px 10px;
+    border-radius: 9px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+  .api-status:hover{ border-color: var(--terracotta); }
+  .dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .dot.off{ background: #C7BEA9; }
+  .dot.on{ background: var(--success); box-shadow: 0 0 0 3px rgba(107,143,113,0.18); }
+
+  /* ---------- MAIN ---------- */
+  .main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+    background: var(--cream);
+    position:relative;
+  }
+
+  .topbar{
+    height: 56px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--line);
+    flex-shrink:0;
+  }
+  .hamburger-btn{
+    width: 36px; height:36px;
+    border-radius: 9px;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    transition: background .15s ease;
+  }
+  .hamburger-btn:hover{ background: rgba(43,38,32,0.07); }
+  .model-pill{
+    font-size: 12px;
+    color: var(--ink-soft);
+    background: var(--cream-2);
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+  }
+
+  .chat-scroll{
+    flex:1;
+    overflow-y:auto;
+    padding: 32px 0 12px 0;
+  }
+
+  .chat-inner{
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Empty state */
+  .empty-state{
+    max-width: 620px;
+    margin: 10vh auto 0 auto;
+    text-align:center;
+    padding: 0 24px;
+  }
+  .empty-mark{
+    width:56px;height:56px;
+    margin:0 auto 22px auto;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--terracotta), var(--terracotta-deep));
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 6px 18px rgba(189,95,66,0.28);
+  }
+  .empty-mark svg{ width:28px;height:28px; }
+
+  .empty-state h1{
+    font-family:'Source Serif 4', serif;
+    font-weight: 600;
+    font-size: 30px;
+    color: var(--ink);
+    margin: 0 0 10px 0;
+    letter-spacing: -0.01em;
+  }
+  .empty-state p{
+    color: var(--ink-soft);
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0 0 28px 0;
+  }
+
+  /* Messages */
+  .msg-row{
+    display:flex;
+    gap: 14px;
+    margin-bottom: 26px;
+    align-items:flex-start;
+  }
+  .msg-row.user{ flex-direction: row-reverse; }
+
+  .avatar{
+    width: 30px; height:30px;
+    border-radius: 8px;
+    flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+  .avatar.ai{
+    background: linear-gradient(135deg, var(--terracotta), var(--terracotta-deep));
+    color: white;
+  }
+  .avatar.user{
+    background: var(--ink);
+    color: var(--cream);
+  }
+
+  .msg-bubble{
+    max-width: 82%;
+    font-size: 14.5px;
+    line-height: 1.65;
+    padding: 2px 0;
+  }
+  .msg-row.user .msg-bubble{
+    background: var(--terracotta-pale);
+    color: var(--ink);
+    padding: 11px 16px;
+    border-radius: 14px 14px 3px 14px;
+  }
+  .msg-row.ai .msg-bubble{
+    padding-top: 4px;
+  }
+
+  .msg-bubble p{ margin: 0 0 10px 0; }
+  .msg-bubble p:last-child{ margin-bottom:0; }
+
+  .msg-bubble pre{
+    background: #2B2620;
+    color: #F4F1EA;
+    padding: 14px 16px;
+    border-radius: 10px;
+    overflow-x:auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.8px;
+    line-height: 1.55;
+    margin: 10px 0;
+  }
+  .msg-bubble code{
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(217,119,87,0.13);
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-size: 0.88em;
+    color: var(--terracotta-deep);
+  }
+  .msg-bubble pre code{
+    background: none; padding:0; color:inherit;
+  }
+
+  .typing-dots{
+    display:flex; gap:4px; padding: 8px 0;
+  }
+  .typing-dots span{
+    width:6px;height:6px;border-radius:50%;
+    background: var(--terracotta);
+    animation: bounce 1.2s infinite ease-in-out;
+  }
+  .typing-dots span:nth-child(2){ animation-delay: 0.15s; }
+  .typing-dots span:nth-child(3){ animation-delay: 0.3s; }
+  @keyframes bounce{
+    0%, 60%, 100%{ transform: translateY(0); opacity:.5; }
+    30%{ transform: translateY(-5px); opacity:1; }
+  }
+
+  .error-note{
+    background: #FBE9E5;
+    border: 1px solid #E8B8AC;
+    color: var(--danger);
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+
+  /* Input area */
+  .input-zone{
+    padding: 14px 24px 22px 24px;
+    flex-shrink:0;
+  }
+  .input-inner{
+    max-width: 760px;
+    margin:0 auto;
+  }
+  .input-box{
+    background: var(--paper);
+    border: 1.5px solid var(--line);
+    border-radius: 18px;
+    padding: 10px 10px 10px 18px;
+    display:flex;
+    align-items:flex-end;
+    gap: 10px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .input-box:focus-within{
+    border-color: var(--terracotta);
+    box-shadow: 0 0 0 3px rgba(217,119,87,0.12);
+  }
+  .input-box textarea{
+    flex:1;
+    border:none;
+    outline:none;
+    background:transparent;
+    resize:none;
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: var(--ink);
+    max-height: 200px;
+    padding: 8px 0;
+  }
+  .input-box textarea::placeholder{ color: #A79E8C; }
+
+  .send-btn{
+    width: 38px; height:38px;
+    border-radius: 12px;
+    border:none;
+    background: var(--terracotta);
+    color:white;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+    transition: background .15s ease, transform .1s ease;
+  }
+  .send-btn:hover:not(:disabled){ background: var(--terracotta-deep); }
+  .send-btn:active:not(:disabled){ transform: scale(0.94); }
+  .send-btn:disabled{ background: #D8CFC0; cursor:not-allowed; }
+  .send-btn svg{ width:16px;height:16px; }
+
+  .input-hint{
+    text-align:center;
+    font-size: 11.5px;
+    color: #A79E8C;
+    margin-top: 10px;
+  }
+
+  /* Modal */
+  .modal-overlay{
+    position:fixed; inset:0;
+    background: rgba(43,38,32,0.35);
+    display:none; align-items:center; justify-content:center;
+    z-index: 100;
+    backdrop-filter: blur(2px);
+  }
+  .modal-overlay.visible{
+    display:flex;
+  }
+  .modal-box{
+    background: var(--paper);
+    border-radius: 18px;
+    padding: 28px;
+    width: 420px;
+    max-width: 90vw;
+    box-shadow: 0 20px 50px rgba(43,38,32,0.25);
+  }
+  .modal-box h2{
+    font-family:'Source Serif 4', serif;
+    font-size: 21px;
+    margin: 0 0 8px 0;
+    color: var(--ink);
+  }
+  .modal-box p{
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    line-height: 1.55;
+    margin: 0 0 18px 0;
+  }
+  .modal-box a{ color: var(--terracotta-deep); }
+  .modal-input{
+    width:100%;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--line);
+    font-size: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    outline:none;
+    margin-bottom: 14px;
+    background: white;
+  }
+  .modal-input:focus{ border-color: var(--terracotta); }
+  .modal-actions{ display:flex; gap:10px; justify-content:flex-end; }
+  .btn-primary{
+    background: var(--terracotta);
+    color:white;
+    border:none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .btn-primary:hover{ background: var(--terracotta-deep); }
+  .btn-ghost{
+    background:transparent;
+    color: var(--ink-soft);
+    border: none;
+    padding: 10px 16px;
+    font-size: 13.5px;
+    cursor:pointer;
+  }
+
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-thumb{ background: #D8CFC0; border-radius:10px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+
+  @media (max-width: 720px){
+    .sidebar{ width: 260px; min-width: 260px; }
+  }
+
+  /* Login screen */
+  .login-screen{
+    position:fixed; inset:0;
+    background: var(--cream);
+    display:flex; align-items:center; justify-content:center;
+    z-index: 200;
+    flex-direction: column;
+    padding: 24px;
+  }
+  .login-box{
+    text-align:center;
+    max-width: 360px;
+  }
+  .login-box .empty-mark{ margin-bottom: 22px; }
+  .login-box h1{
+    font-family:'Source Serif 4', serif;
+    font-weight:600;
+    font-size: 26px;
+    margin: 0 0 8px 0;
+    color: var(--ink);
+  }
+  .login-box p{
+    color: var(--ink-soft);
+    font-size: 14px;
+    line-height:1.6;
+    margin: 0 0 28px 0;
+  }
+  .google-btn{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    width:100%;
+    background: white;
+    border: 1.5px solid var(--line);
+    color: var(--ink);
+    padding: 12px 18px;
+    border-radius: 12px;
+    font-size: 14.5px;
+    font-weight: 600;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .google-btn:hover{ border-color: var(--terracotta); box-shadow: 0 2px 10px rgba(43,38,32,0.08); }
+  .google-btn:disabled{ opacity:0.6; cursor:not-allowed; }
+  .google-btn svg{ width:18px; height:18px; flex-shrink:0; }
+  .login-error{
+    margin-top: 16px;
+    color: var(--danger);
+    font-size: 13px;
+  }
+  .login-loading{
+    margin-top: 16px;
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+
+  .user-chip{
+    display:flex; align-items:center; gap:9px;
+    padding: 9px 10px;
+    border-radius: 9px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    font-size: 12.5px;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .user-chip img{
+    width: 24px; height:24px;
+    border-radius:50%;
+    flex-shrink:0;
+  }
+  .user-chip .user-name{
+    flex:1;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-weight:500;
+  }
+  .logout-btn{
+    background:none; border:none;
+    color: var(--ink-soft);
+    cursor:pointer;
+    padding: 4px;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    border-radius:6px;
+  }
+  .logout-btn:hover{ background: rgba(43,38,32,0.06); color: var(--danger); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="empty-mark" style="margin-left:auto;margin-right:auto;">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L4 20h4l1.5-3.5h5L16 20h4L12 3zm0 5.5L14 13h-4l2-4.5z" fill="white"/></svg>
+    </div>
+    <h1>Masuk ke Farvion</h1>
+    <p>Masuk dengan akun Google kamu untuk mulai mengobrol dengan Farvion, AI coding companion kamu.</p>
+    <button class="google-btn" id="googleLoginBtn" onclick="signInWithGoogle()">
+      <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+      Masuk dengan Google
+    </button>
+    <div class="login-loading" id="loginLoading" style="display:none;">Menghubungkan ke Google...</div>
+    <div class="login-error" id="loginError" style="display:none;"></div>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+
+  <!-- SIDEBAR OVERLAY -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-top">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L4 20h4l1.5-3.5h5L16 20h4L12 3zm0 5.5L14 13h-4l2-4.5z" fill="white"/></svg>
+        </div>
+        <div>
+          <div class="brand-name">Farvion</div>
+          <div class="brand-sub">AI coding companion</div>
+        </div>
+      </div>
+      <button class="close-sidebar-btn" onclick="closeSidebar()" aria-label="Tutup sidebar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="new-chat-btn" onclick="newChat()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      New chat
+    </div>
+
+    <div class="side-section-label">Riwayat</div>
+    <div id="historyList"></div>
+
+    <div class="sidebar-footer">
+      <div class="user-chip" id="userChip">
+        <img id="userAvatar" src="" alt="">
+        <span class="user-name" id="userChipName"></span>
+        <button class="logout-btn" onclick="signOutUser()" aria-label="Keluar" title="Keluar">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        </button>
+      </div>
+      <div class="api-status" onclick="openKeyModal()">
+        <div class="dot off" id="statusDot"></div>
+        <span id="statusText">API key belum diatur</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <button class="hamburger-btn" onclick="openSidebar()" aria-label="Buka sidebar">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div class="model-pill">Gemini 2.0 Flash</div>
+    </div>
+
+    <div class="chat-scroll" id="chatScroll">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-mark">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L4 20h4l1.5-3.5h5L16 20h4L12 3zm0 5.5L14 13h-4l2-4.5z" fill="white"/></svg>
+        </div>
+        <h1 id="greetingHeadline">Halo</h1>
+      </div>
+
+      <div class="chat-inner" id="chatInner"></div>
+    </div>
+
+    <div class="input-zone">
+      <div class="input-inner">
+        <div class="input-box">
+          <textarea id="userInput" rows="1" placeholder="Mengobrol dengan Farvion..." onkeydown="handleKeydown(event)" oninput="autoGrow(this)"></textarea>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          </button>
+        </div>
+        <div class="input-hint">Farvion pakai Gemini API — API key kamu disimpan hanya di sesi browser ini, tidak dikirim ke server manapun selain Google.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- API KEY MODAL -->
+<div class="modal-overlay" id="keyModal">
+  <div class="modal-box">
+    <h2>Masukkan API Key Gemini</h2>
+    <p>
+      Farvion butuh API key Gemini kamu sendiri untuk jalan. Key ini <b>hanya disimpan di memori browser selama sesi ini</b> — tidak pernah dikirim ke server manapun kecuali langsung ke Google.
+      Belum punya key? Ambil gratis di <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.
+    </p>
+    <input type="password" class="modal-input" id="apiKeyInput" placeholder="AIza...">
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeKeyModal()">Batal</button>
+      <button class="btn-primary" onclick="saveApiKey()">Simpan & mulai</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script>
+  // ====== GANTI DENGAN CONFIG FIREBASE PROJECT KAMU SENDIRI ======
+  // Ambil dari: Firebase Console > Project Settings > General > Your apps > SDK setup and configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyAREpMnFfpagnGILazsSaxEsHj3FS0Yr7c",
+    authDomain: "farvion-ai.firebaseapp.com",
+    projectId: "farvion-ai",
+    storageBucket: "farvion-ai.firebasestorage.app",
+    messagingSenderId: "173242416433",
+    appId: "1:173242416433:web:f8291dee124f126d568410"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+  let currentUser = null;
+
+  function signInWithGoogle(){
+    document.getElementById('googleLoginBtn').disabled = true;
+    document.getElementById('loginLoading').style.display = 'block';
+    document.getElementById('loginError').style.display = 'none';
+    // Redirect lebih reliable daripada popup, terutama di dalam WebView (APK Android)
+    auth.signInWithRedirect(googleProvider);
+  }
+
+  function signOutUser(){
+    auth.signOut();
+  }
+
+  function showLoginScreen(){
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+
+  function showApp(){
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+  }
+
+  // Cek hasil redirect (kalau baru saja kembali dari Google sign-in)
+  auth.getRedirectResult().catch(err => {
+    document.getElementById('googleLoginBtn').disabled = false;
+    document.getElementById('loginLoading').style.display = 'none';
+    document.getElementById('loginError').style.display = 'block';
+    document.getElementById('loginError').textContent = 'Gagal masuk: ' + err.message;
+  });
+
+  // Pantau status login — otomatis jalan tiap kali auth state berubah (login/logout/refresh)
+  auth.onAuthStateChanged(user => {
+    if(user){
+      currentUser = user;
+      userName = user.displayName ? user.displayName.split(' ')[0] : '';
+      document.getElementById('userAvatar').src = user.photoURL || '';
+      document.getElementById('userChipName').textContent = user.displayName || user.email || '';
+      showApp();
+      updateGreeting();
+    } else {
+      currentUser = null;
+      userName = '';
+      showLoginScreen();
+    }
+  });
+
+  let apiKey = '';
+  let conversations = {}; // id -> {title, messages: [{role, text}]}
+  let currentConvId = null;
+  let convCounter = 0;
+
+  function openSidebar(){
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebarOverlay').classList.add('open');
+  }
+  function closeSidebar(){
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('open');
+  }
+
+  function openKeyModal(){
+    document.getElementById('keyModal').classList.add('visible');
+    document.getElementById('apiKeyInput').value = apiKey;
+    document.getElementById('apiKeyInput').focus();
+  }
+  function closeKeyModal(){
+    document.getElementById('keyModal').classList.remove('visible');
+  }
+  function saveApiKey(){
+    const val = document.getElementById('apiKeyInput').value.trim();
+    if(!val){ closeKeyModal(); return; }
+    apiKey = val;
+    document.getElementById('statusDot').className = 'dot on';
+    document.getElementById('statusText').textContent = 'API key aktif';
+    document.getElementById('sendBtn').disabled = false;
+    closeKeyModal();
+  }
+
+  // Sapaan berdasar waktu lokal perangkat, diterjemahkan sesuai bahasa browser user.
+  // Fallback ke Inggris kalau bahasa browser tidak ada di daftar.
+  const GREETING_TRANSLATIONS = {
+    id: ['Pagi', 'Siang', 'Sore', 'Malam'],
+    en: ['Good morning', 'Good afternoon', 'Good evening', 'Good night'],
+    es: ['Buenos días', 'Buenas tardes', 'Buenas tardes', 'Buenas noches'],
+    fr: ['Bonjour', 'Bon après-midi', 'Bonsoir', 'Bonne nuit'],
+    de: ['Guten Morgen', 'Guten Tag', 'Guten Abend', 'Gute Nacht'],
+    pt: ['Bom dia', 'Boa tarde', 'Boa tarde', 'Boa noite'],
+    ja: ['おはよう', 'こんにちは', 'こんばんは', 'おやすみ'],
+    ko: ['좋은 아침', '안녕하세요', '좋은 저녁', '안녕히 주무세요'],
+    zh: ['早上好', '下午好', '晚上好', '晚安'],
+    ar: ['صباح الخير', 'مساء الخير', 'مساء الخير', 'تصبح على خير'],
+    hi: ['सुप्रभात', 'नमस्ते', 'शुभ संध्या', 'शुभ रात्रि'],
+    ru: ['Доброе утро', 'Добрый день', 'Добрый вечер', 'Спокойной ночи'],
+    it: ['Buongiorno', 'Buon pomeriggio', 'Buonasera', 'Buonanotte'],
+    nl: ['Goedemorgen', 'Goedemiddag', 'Goedenavond', 'Goedenacht'],
+    tr: ['Günaydın', 'İyi günler', 'İyi akşamlar', 'İyi geceler'],
+    vi: ['Chào buổi sáng', 'Chào buổi chiều', 'Chào buổi tối', 'Chúc ngủ ngon'],
+    th: ['สวัสดีตอนเช้า', 'สวัสดีตอนบ่าย', 'สวัสดีตอนเย็น', 'ราตรีสวัสดิ์'],
+    ms: ['Selamat pagi', 'Selamat tengah hari', 'Selamat petang', 'Selamat malam']
+  };
+
+  function getGreetingWord(){
+    const hour = new Date().getHours();
+    let index;
+    if(hour >= 4 && hour < 11) index = 0;      // pagi
+    else if(hour >= 11 && hour < 15) index = 1; // siang
+    else if(hour >= 15 && hour < 18) index = 2; // sore
+    else index = 3;                             // malam
+
+    const browserLang = (navigator.language || 'en').slice(0,2).toLowerCase();
+    const words = GREETING_TRANSLATIONS[browserLang] || GREETING_TRANSLATIONS['en'];
+    return words[index];
+  }
+
+  function updateGreeting(){
+    const el = document.getElementById('greetingHeadline');
+    if(!el) return;
+    const greetingWord = getGreetingWord();
+    el.textContent = userName ? `${greetingWord}, ${userName}` : greetingWord;
+  }
+
+  function autoGrow(el){
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+  }
+
+  function handleKeydown(e){
+    if(e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function updatePlaceholder(){
+    const input = document.getElementById('userInput');
+    const hasMessages = currentConvId && conversations[currentConvId].messages.length > 0;
+    input.placeholder = hasMessages ? 'Balas Farvion...' : 'Mengobrol dengan Farvion...';
+  }
+
+  function newChat(){
+    // Kalau chat yang sedang aktif masih kosong, jangan bikin entry baru lagi
+    if(currentConvId && conversations[currentConvId] && conversations[currentConvId].messages.length === 0){
+      renderChat();
+      closeSidebar();
+      return;
+    }
+    convCounter++;
+    const id = 'c' + convCounter;
+    conversations[id] = { title: 'Percakapan baru', messages: [] };
+    currentConvId = id;
+    renderHistory();
+    renderChat();
+    closeSidebar();
+  }
+
+  function renderHistory(){
+    const list = document.getElementById('historyList');
+    list.innerHTML = '';
+    Object.keys(conversations).reverse().forEach(id => {
+      const conv = conversations[id];
+      if(conv.messages.length === 0) return; // jangan tampilkan chat kosong di riwayat
+      const div = document.createElement('div');
+      div.className = 'history-item' + (id === currentConvId ? ' active' : '');
+      div.textContent = conv.title;
+      div.onclick = () => { currentConvId = id; renderHistory(); renderChat(); closeSidebar(); };
+      list.appendChild(div);
+    });
+  }
+
+  function escapeHtml(str){
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // Simple markdown-ish renderer: code blocks, inline code, bold, paragraphs
+  function renderMarkdown(text){
+    let escaped = escapeHtml(text);
+    escaped = escaped.replace(/```([a-zA-Z]*)\n([\s\S]*?)```/g, (m, lang, code) => {
+      return '<pre><code>' + code.trim() + '</code></pre>';
+    });
+    escaped = escaped.replace(/`([^`]+)`/g, '<code>$1</code>');
+    escaped = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    escaped = escaped.split(/\n\n+/).map(p => {
+      if(p.startsWith('<pre>')) return p;
+      return '<p>' + p.replace(/\n/g,'<br>') + '</p>';
+    }).join('');
+    return escaped;
+  }
+
+  function renderChat(){
+    const emptyState = document.getElementById('emptyState');
+    const chatInner = document.getElementById('chatInner');
+
+    if(!currentConvId || conversations[currentConvId].messages.length === 0){
+      emptyState.style.display = 'block';
+      chatInner.style.display = 'none';
+      updatePlaceholder();
+      updateGreeting();
+      return;
+    }
+
+    emptyState.style.display = 'none';
+    chatInner.style.display = 'block';
+
+    chatInner.innerHTML = '';
+    conversations[currentConvId].messages.forEach(msg => {
+      const row = document.createElement('div');
+      row.className = 'msg-row ' + msg.role;
+      if(msg.role === 'ai'){
+        row.innerHTML = `
+          <div class="avatar ai">F</div>
+          <div class="msg-bubble">${msg.loading ? '<div class="typing-dots"><span></span><span></span><span></span></div>' : (msg.error ? '<div class="error-note">' + escapeHtml(msg.text) + '</div>' : renderMarkdown(msg.text))}</div>
+        `;
+      } else {
+        row.innerHTML = `
+          <div class="avatar user">U</div>
+          <div class="msg-bubble">${escapeHtml(msg.text)}</div>
+        `;
+      }
+      chatInner.appendChild(row);
+    });
+
+    const scroll = document.getElementById('chatScroll');
+    scroll.scrollTop = scroll.scrollHeight;
+
+    updatePlaceholder();
+  }
+
+  async function sendMessage(){
+    const input = document.getElementById('userInput');
+    const text = input.value.trim();
+    if(!text) return;
+
+    if(!apiKey){ openKeyModal(); return; }
+
+    if(!currentConvId){
+      newChat();
+    }
+
+    const conv = conversations[currentConvId];
+    if(conv.messages.length === 0){
+      conv.title = text.length > 32 ? text.slice(0,32) + '…' : text;
+    }
+
+    conv.messages.push({ role:'user', text });
+    input.value = '';
+    autoGrow(input);
+    renderHistory();
+    renderChat();
+
+    conv.messages.push({ role:'ai', text:'', loading:true });
+    renderChat();
+
+    document.getElementById('sendBtn').disabled = true;
+
+    try{
+      const systemPrompt = "Kamu adalah Farvion, AI coding companion yang fokus membantu developer web — JavaScript, React, dan Next.js. Jawab dengan jelas, ringkas, dan berikan contoh kode best-practice terbaru bila relevan. Gunakan format markdown dengan code block (```) untuk kode.";
+
+      const history = conv.messages
+        .filter(m => !m.loading)
+        .slice(0, -1)
+        .map(m => ({
+          role: m.role === 'user' ? 'user' : 'model',
+          parts: [{ text: m.text }]
+        }));
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              ...history,
+              { role: 'user', parts: [{ text: text }] }
+            ],
+            systemInstruction: { parts: [{ text: systemPrompt }] }
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      conv.messages.pop(); // remove loading placeholder
+
+      if(!response.ok){
+        const errMsg = data?.error?.message || 'Terjadi kesalahan saat menghubungi Gemini API.';
+        conv.messages.push({ role:'ai', text: errMsg, error:true });
+      } else {
+        const reply = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || 'Maaf, tidak ada respons yang bisa ditampilkan.';
+        conv.messages.push({ role:'ai', text: reply });
+      }
+    } catch(err){
+      conv.messages.pop();
+      conv.messages.push({ role:'ai', text: 'Gagal terhubung ke Gemini API: ' + err.message, error:true });
+    }
+
+    document.getElementById('sendBtn').disabled = false;
+    renderChat();
+  }
+
+  // init
+  newChat();
+  document.getElementById('userInput').focus();
+  // Tampilan awal (login screen vs app) diatur oleh auth.onAuthStateChanged di atas
+</script>
+
+</body>
+</html>
