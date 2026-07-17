@@ -717,8 +717,23 @@
     document.getElementById('googleLoginBtn').disabled = true;
     document.getElementById('loginLoading').style.display = 'block';
     document.getElementById('loginError').style.display = 'none';
-    // Redirect lebih reliable daripada popup, terutama di dalam WebView (APK Android)
-    auth.signInWithRedirect(googleProvider);
+    // Coba popup dulu (lebih cepat & error lebih jelas di browser biasa).
+    // Kalau gagal karena diblokir/tidak didukung, baru fallback ke redirect.
+    auth.signInWithPopup(googleProvider)
+      .catch(err => {
+        if(err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment' || err.code === 'auth/popup-closed-by-user'){
+          auth.signInWithRedirect(googleProvider).catch(showAuthError);
+        } else {
+          showAuthError(err);
+        }
+      });
+  }
+
+  function showAuthError(err){
+    document.getElementById('googleLoginBtn').disabled = false;
+    document.getElementById('loginLoading').style.display = 'none';
+    document.getElementById('loginError').style.display = 'block';
+    document.getElementById('loginError').textContent = 'Gagal masuk (' + err.code + '): ' + err.message;
   }
 
   function signOutUser(){
@@ -735,13 +750,12 @@
     document.getElementById('app').style.display = 'flex';
   }
 
-  // Cek hasil redirect (kalau baru saja kembali dari Google sign-in)
-  auth.getRedirectResult().catch(err => {
-    document.getElementById('googleLoginBtn').disabled = false;
-    document.getElementById('loginLoading').style.display = 'none';
-    document.getElementById('loginError').style.display = 'block';
-    document.getElementById('loginError').textContent = 'Gagal masuk: ' + err.message;
-  });
+  // Cek hasil redirect (kalau baru saja kembali dari Google sign-in via fallback redirect)
+  auth.getRedirectResult().then(result => {
+    if(result && result.user){
+      // berhasil — onAuthStateChanged di bawah akan menangani tampilan
+    }
+  }).catch(showAuthError);
 
   // Pantau status login — otomatis jalan tiap kali auth state berubah (login/logout/refresh)
   auth.onAuthStateChanged(user => {
