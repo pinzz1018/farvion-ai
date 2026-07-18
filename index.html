@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Farvion — Your AI Coding Companion</title>
+<title>Farvion — Your Everyday AI Assistant</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
@@ -13,15 +13,22 @@
     --paper: #FBFAF7;
     --ink: #2B2620;
     --ink-soft: #5B5347;
-    --terracotta: #D97757;
-    --terracotta-deep: #BD5F42;
-    --terracotta-pale: #F0DBCE;
+    --terracotta: #1E3FCB;
+    --terracotta-deep: #17318F;
+    --terracotta-pale: #DCE2FA;
     --line: #E1DACB;
     --success: #6B8F71;
     --danger: #C0574A;
   }
 
-  *{ box-sizing: border-box; }
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  button, a, [role="button"], input, textarea{
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+  }
+  button:focus, a:focus{
+    outline: none;
+  }
 
   html, body{
     margin:0; padding:0; height:100%;
@@ -99,13 +106,10 @@
 
   .brand-mark{
     width:34px; height:34px;
-    border-radius:9px;
-    background: linear-gradient(135deg, var(--terracotta), var(--terracotta-deep));
     display:flex; align-items:center; justify-content:center;
     flex-shrink:0;
-    box-shadow: 0 2px 6px rgba(189,95,66,0.25);
   }
-  .brand-mark svg{ width:18px; height:18px; }
+  .brand-mark svg, .brand-mark img{ width:32px; height:32px; }
 
   .brand-name{
     font-family:'Source Serif 4', serif;
@@ -158,7 +162,7 @@
     text-overflow: ellipsis;
     transition: background .12s ease;
   }
-  .history-item:hover{ background: rgba(217,119,87,0.09); color: var(--ink); }
+  .history-item:hover{ background: rgba(30,63,203,0.09); color: var(--ink); }
   .history-item.active{ background: var(--terracotta-pale); color: var(--terracotta-deep); font-weight: 500; }
 
   .sidebar-footer{
@@ -245,12 +249,9 @@
   .empty-mark{
     width:56px;height:56px;
     margin:0 auto 22px auto;
-    border-radius: 16px;
-    background: linear-gradient(135deg, var(--terracotta), var(--terracotta-deep));
     display:flex; align-items:center; justify-content:center;
-    box-shadow: 0 6px 18px rgba(189,95,66,0.28);
   }
-  .empty-mark svg{ width:28px;height:28px; }
+  .empty-mark svg, .empty-mark img{ width:52px;height:52px; }
 
   .empty-state h1{
     font-family:'Source Serif 4', serif;
@@ -284,10 +285,6 @@
     font-size: 12px;
     font-weight: 700;
     margin-top: 2px;
-  }
-  .avatar.ai{
-    background: linear-gradient(135deg, var(--terracotta), var(--terracotta-deep));
-    color: white;
   }
   .avatar.user{
     background: var(--ink);
@@ -326,7 +323,7 @@
   }
   .msg-bubble code{
     font-family: 'JetBrains Mono', monospace;
-    background: rgba(217,119,87,0.13);
+    background: rgba(30,63,203,0.13);
     padding: 2px 6px;
     border-radius: 5px;
     font-size: 0.88em;
@@ -337,18 +334,23 @@
   }
 
   .typing-dots{
-    display:flex; gap:4px; padding: 8px 0;
+    display:flex; align-items:center; padding: 6px 0;
   }
-  .typing-dots span{
-    width:6px;height:6px;border-radius:50%;
-    background: var(--terracotta);
-    animation: bounce 1.2s infinite ease-in-out;
+  .typing-dots .loading-pinwheel{
+    width: 22px;
+    height: 22px;
+    color: var(--terracotta);
+    animation: farvionSpin 1.6s cubic-bezier(.65,.05,.36,1) infinite;
+    transform-origin: 50% 50%;
   }
-  .typing-dots span:nth-child(2){ animation-delay: 0.15s; }
-  .typing-dots span:nth-child(3){ animation-delay: 0.3s; }
-  @keyframes bounce{
-    0%, 60%, 100%{ transform: translateY(0); opacity:.5; }
-    30%{ transform: translateY(-5px); opacity:1; }
+  .typing-dots .loading-pinwheel svg{
+    width:100%;
+    height:100%;
+    display:block;
+  }
+  @keyframes farvionSpin{
+    0%{ transform: rotate(0deg); }
+    100%{ transform: rotate(360deg); }
   }
 
   .error-note{
@@ -358,6 +360,8 @@
     padding: 10px 14px;
     border-radius: 10px;
     font-size: 13px;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 
   /* Input area */
@@ -372,19 +376,19 @@
   .input-box{
     background: var(--paper);
     border: 1.5px solid var(--line);
-    border-radius: 18px;
-    padding: 10px 10px 10px 18px;
+    border-radius: 22px;
+    padding: 14px 14px 10px 18px;
     display:flex;
-    align-items:flex-end;
-    gap: 10px;
+    flex-direction: column;
+    gap: 6px;
     transition: border-color .15s ease, box-shadow .15s ease;
   }
   .input-box:focus-within{
     border-color: var(--terracotta);
-    box-shadow: 0 0 0 3px rgba(217,119,87,0.12);
+    box-shadow: 0 0 0 3px rgba(30,63,203,0.12);
   }
   .input-box textarea{
-    flex:1;
+    width:100%;
     border:none;
     outline:none;
     background:transparent;
@@ -394,13 +398,49 @@
     line-height: 1.5;
     color: var(--ink);
     max-height: 200px;
-    padding: 8px 0;
+    padding: 0;
   }
   .input-box textarea::placeholder{ color: #A79E8C; }
 
+  .input-toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+  }
+  .input-toolbar-left{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+  }
+  .attach-btn{
+    width: 34px; height:34px;
+    border-radius: 50%;
+    border: 1.5px solid var(--line);
+    background: transparent;
+    color: var(--ink-soft);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .attach-btn:hover{ background: rgba(43,38,32,0.05); border-color: var(--ink-soft); }
+  .attach-btn svg{ width:17px; height:17px; }
+  .composer-model-pill{
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    background: rgba(43,38,32,0.05);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-family:'Inter',sans-serif;
+    font-weight:500;
+    white-space:nowrap;
+  }
+
   .send-btn{
-    width: 38px; height:38px;
-    border-radius: 12px;
+    width: 34px; height:34px;
+    border-radius: 50%;
     border:none;
     background: var(--terracotta);
     color:white;
@@ -485,6 +525,470 @@
     font-size: 13.5px;
     cursor:pointer;
   }
+
+  /* Bottom sheet (tombol + di composer) */
+  .sheet-overlay{
+    position:fixed; inset:0;
+    background: rgba(43,38,32,0.35);
+    z-index: 110;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .22s ease;
+  }
+  .sheet-overlay.visible{
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .bottom-sheet{
+    position: fixed;
+    left:0; right:0; bottom:0;
+    background: var(--paper);
+    border-radius: 20px 20px 0 0;
+    z-index: 111;
+    box-shadow: 0 -8px 30px rgba(43,38,32,0.20);
+    /* tinggi penuh sheet; posisi vertikalnya diatur lewat transform translateY() dari JS sesuai snap point */
+    height: 90vh;
+    max-height: 90vh;
+    transform: translateY(100%);
+    transition: transform .32s cubic-bezier(.32,.72,0,1);
+    max-width: 480px;
+    margin: 0 auto;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    touch-action: none;
+    display:flex;
+    flex-direction:column;
+    overflow: hidden;
+    cursor: grab;
+  }
+  .bottom-sheet.visible{
+    /* transform di-set inline oleh JS sesuai snap point aktif (half/full) */
+  }
+  .bottom-sheet.dragging{
+    transition: none;
+    cursor: grabbing;
+  }
+  .bottom-sheet .sheet-scroll{
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sheet-handle-area{
+    display:flex;
+    justify-content:center;
+    padding: 10px 0 6px 0;
+    cursor: grab;
+    flex-shrink:0;
+  }
+  .sheet-handle{
+    width: 40px; height: 5px;
+    border-radius: 3px;
+    background: var(--line);
+  }
+  .sheet-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 2px 16px 16px 16px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .sheet-close-btn{
+    width: 32px; height:32px;
+    border-radius: 50%;
+    border:none;
+    background:transparent;
+    color: var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .sheet-close-btn:hover{ background: rgba(43,38,32,0.06); }
+  .sheet-title{
+    font-size: 15.5px;
+    font-weight: 700;
+    color: var(--ink);
+    text-align:center;
+    flex:1;
+  }
+  .sheet-header-spacer{ width:32px; flex-shrink:0; }
+
+  .sheet-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 4px 16px 18px 16px;
+  }
+  .sheet-grid-item{
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    padding: 14px 6px;
+    border-radius: 14px;
+    cursor: not-allowed;
+    opacity: 0.55;
+    border: none;
+    background: transparent;
+    font: inherit;
+  }
+  .sheet-grid-item.active{
+    cursor: pointer;
+    opacity: 1;
+    transition: background .12s ease;
+  }
+  .sheet-grid-item.active:hover{ background: rgba(43,38,32,0.05); }
+  .sheet-grid-item-icon{
+    width: 44px; height:44px;
+    border-radius: 50%;
+    background: var(--cream-2);
+    display:flex; align-items:center; justify-content:center;
+    color: var(--ink-soft);
+  }
+  .sheet-grid-item-icon svg{ width:19px; height:19px; }
+  .sheet-grid-item-label{
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    font-weight: 500;
+    text-align:center;
+  }
+  .sheet-grid-item-soon{
+    font-size: 9.5px;
+    color: var(--terracotta-deep);
+    background: var(--terracotta-pale);
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-weight: 600;
+    margin-top: -2px;
+  }
+
+  .sheet-items{
+    padding: 4px 12px 18px 12px;
+  }
+  .sheet-item{
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    padding: 13px 12px;
+    border-radius: 12px;
+    cursor:pointer;
+    transition: background .12s ease;
+  }
+  .sheet-item:hover{ background: rgba(43,38,32,0.05); }
+  .sheet-item.disabled{ cursor: not-allowed; opacity: 0.55; }
+  .sheet-item-icon{
+    width: 38px; height:38px;
+    border-radius: 50%;
+    background: var(--cream-2);
+    display:flex; align-items:center; justify-content:center;
+    color: var(--ink-soft);
+    flex-shrink:0;
+  }
+  .sheet-item-icon svg{ width:18px; height:18px; }
+  .sheet-item-label{
+    font-size: 14.5px;
+    color: var(--ink);
+    font-weight: 500;
+    flex:1;
+  }
+  .sheet-item-sub{
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 1px;
+  }
+  .sheet-toggle{
+    width: 40px; height:24px;
+    border-radius: 999px;
+    background: var(--line);
+    position:relative;
+    flex-shrink:0;
+    transition: background .15s ease;
+  }
+  .sheet-toggle::after{
+    content:'';
+    position:absolute;
+    top:3px; left:3px;
+    width:18px; height:18px;
+    border-radius:50%;
+    background:white;
+    transition: transform .15s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .sheet-item-chevron{
+    flex-shrink:0;
+    color: var(--ink-soft);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .sheet-item-chevron svg{ width:18px; height:18px; }
+
+  /* ==== Header sheet: tombol back (sub-halaman) & tombol aksi kanan ==== */
+  .sheet-back-btn{
+    width: 32px; height:32px;
+    border-radius: 50%;
+    border:none;
+    background:transparent;
+    color: var(--ink);
+    display:none;
+    align-items:center; justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .sheet-back-btn.visible{ display:flex; }
+  .sheet-back-btn:hover{ background: rgba(43,38,32,0.06); }
+  .sheet-action-btn{
+    width: 32px; height:32px;
+    border-radius: 50%;
+    border:none;
+    background:transparent;
+    color: var(--ink-soft);
+    display:none;
+    align-items:center; justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .sheet-action-btn.visible{ display:flex; }
+  .sheet-action-btn:hover{ background: rgba(43,38,32,0.06); color: var(--ink); }
+
+  /* ==== Sub-halaman: Konektor ==== */
+  .sheet-page{
+    display:none;
+  }
+  .sheet-page.active{
+    display:block;
+  }
+  .connector-intro{
+    font-size: 13px;
+    color: var(--ink-soft);
+    padding: 0 16px 14px 16px;
+    line-height: 1.5;
+  }
+  .connector-list{
+    padding: 0 12px 18px 12px;
+    display:flex;
+    flex-direction:column;
+    gap: 2px;
+  }
+  .connector-item{
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    padding: 13px 12px;
+    border-radius: 12px;
+  }
+  .connector-item-icon{
+    width: 38px; height:38px;
+    border-radius: 10px;
+    background: var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    color: var(--paper);
+    flex-shrink:0;
+  }
+  .connector-item-icon svg{ width:20px; height:20px; }
+  .connector-item-body{ flex:1; min-width:0; }
+  .connector-item-name{
+    font-size: 14.5px;
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .connector-item-status{
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 1px;
+  }
+  .connector-item-status.connected{
+    color: var(--success);
+    font-weight: 500;
+  }
+  .connector-connect-btn{
+    flex-shrink:0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--terracotta-deep);
+    background: var(--terracotta-pale);
+    border: none;
+    padding: 7px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .12s ease;
+  }
+  .connector-connect-btn:hover{ background: #cbd4f5; }
+  .connector-disconnect-btn{
+    flex-shrink:0;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    background: transparent;
+    border: 1px solid var(--line);
+    padding: 6px 13px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all .12s ease;
+  }
+  .connector-disconnect-btn:hover{ border-color: var(--danger); color: var(--danger); }
+  .connector-item.disabled .connector-item-icon{ background: var(--cream-2); color: var(--ink-soft); opacity: .7; }
+  .connector-item.disabled .connector-item-name{ color: var(--ink-soft); }
+  .connector-soon-badge{
+    flex-shrink:0;
+    font-size: 11px;
+    color: var(--ink-soft);
+    background: var(--cream-2);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 500;
+  }
+
+  /* ==== Konektor: empty state (halaman utama sebelum ada yang terhubung) ==== */
+  .connector-empty{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    padding: 40px 32px 46px 32px;
+  }
+  .connector-empty-icon{
+    width: 56px; height:56px;
+    border-radius: 50%;
+    background: var(--cream-2);
+    color: var(--ink-soft);
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom: 16px;
+  }
+  .connector-empty-icon svg{ width:26px; height:26px; }
+  .connector-empty-text{
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    line-height: 1.55;
+    max-width: 280px;
+  }
+
+  /* ==== Sub-halaman: Direktori konektor (dibuka lewat ikon kompas) ==== */
+  .connector-directory-label{
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    font-weight: 600;
+    padding: 10px 16px 6px 16px;
+  }
+
+  /* ==== Lampiran (attachments) ==== */
+  .attach-preview-row{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding: 2px 2px 8px 2px;
+  }
+  .attach-preview-row:empty{ display:none; }
+  .attach-image-card{
+    position:relative;
+    width: 92px; height:92px;
+    border-radius: 14px;
+    overflow: hidden;
+    flex-shrink:0;
+    border: 1px solid var(--line);
+    background: #fff;
+  }
+  .attach-image-card img{
+    width:100%; height:100%;
+    object-fit: cover;
+    display:block;
+  }
+  .attach-image-card-remove{
+    position:absolute;
+    top:6px; right:6px;
+    width: 22px; height:22px;
+    border-radius: 50%;
+    background: rgba(20,17,14,0.85);
+    color: #fff;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    border:none;
+  }
+  .attach-image-card-remove svg{ width:11px; height:11px; }
+  .attach-chip-icon{
+    width: 32px; height:32px;
+    border-radius: 8px;
+    background: var(--cream);
+    border: 1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    color: var(--ink-soft);
+    flex-shrink:0;
+  }
+  .attach-chip-icon svg{ width:16px; height:16px; }
+
+  /* Card file (mirip lampiran dokumen) — badge ekstensi + nama, bukan chip pil kecil */
+  .attach-file-card{
+    position:relative;
+    width: 150px;
+    padding: 12px 12px 10px 12px;
+    border-radius: 14px;
+    background: #ffffff;
+    border: 1px solid var(--line);
+    flex-shrink:0;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    gap: 22px;
+    box-shadow: 0 1px 2px rgba(43,38,32,0.04);
+  }
+  .attach-file-card-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+  }
+  .attach-file-card-badge{
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: var(--ink-soft);
+    background: var(--cream-2);
+    border: 1px solid var(--line);
+    padding: 3px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+  }
+  .attach-file-card-remove{
+    width: 20px; height:20px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--cream);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+    border:none;
+    margin: -2px -2px 0 0;
+  }
+  .attach-file-card-remove svg{ width:10px; height:10px; }
+  .attach-file-card-name{
+    font-size: 13px;
+    color: var(--ink);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow:hidden;
+    text-overflow: ellipsis;
+  }
+
+  .msg-attachments{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:6px;
+  }
+  .msg-attachment-badge{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding: 5px 10px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  .msg-attachment-badge img{
+    width: 20px; height:20px;
+    border-radius: 5px;
+    object-fit: cover;
+  }
+  .msg-attachment-badge svg{ width:13px; height:13px; flex-shrink:0; }
 
   ::-webkit-scrollbar{ width:8px; }
   ::-webkit-scrollbar-thumb{ background: #D8CFC0; border-radius:10px; }
@@ -589,10 +1093,10 @@
 <div class="login-screen" id="loginScreen">
   <div class="login-box">
     <div class="empty-mark" style="margin-left:auto;margin-right:auto;">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L4 20h4l1.5-3.5h5L16 20h4L12 3zm0 5.5L14 13h-4l2-4.5z" fill="white"/></svg>
+      <img src="data:image/png;base64,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" alt="Farvion" style="object-fit:contain;">
     </div>
     <h1>Masuk ke Farvion</h1>
-    <p>Masuk dengan akun Google kamu untuk mulai mengobrol dengan Farvion, AI coding companion kamu.</p>
+    <p>Masuk dengan akun Google kamu untuk mulai mengobrol dengan Farvion, asisten AI kamu untuk semua hal.</p>
     <button class="google-btn" id="googleLoginBtn" onclick="signInWithGoogle()">
       <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
       Masuk dengan Google
@@ -612,11 +1116,11 @@
     <div class="sidebar-top">
       <div class="brand">
         <div class="brand-mark">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L4 20h4l1.5-3.5h5L16 20h4L12 3zm0 5.5L14 13h-4l2-4.5z" fill="white"/></svg>
+          <img src="data:image/png;base64,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" alt="Farvion" style="object-fit:contain;">
         </div>
         <div>
           <div class="brand-name">Farvion</div>
-          <div class="brand-sub">AI coding companion</div>
+          <div class="brand-sub">Asisten AI serba bisa</div>
         </div>
       </div>
       <button class="close-sidebar-btn" onclick="closeSidebar()" aria-label="Tutup sidebar">
@@ -659,7 +1163,7 @@
     <div class="chat-scroll" id="chatScroll">
       <div class="empty-state" id="emptyState">
         <div class="empty-mark">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L4 20h4l1.5-3.5h5L16 20h4L12 3zm0 5.5L14 13h-4l2-4.5z" fill="white"/></svg>
+          <img src="data:image/png;base64,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" alt="Farvion" style="object-fit:contain;">
         </div>
         <h1 id="greetingHeadline">Halo</h1>
       </div>
@@ -669,18 +1173,31 @@
 
     <div class="input-zone">
       <div class="input-inner">
+        <div class="attach-preview-row" id="attachPreviewRow"></div>
         <div class="input-box">
           <textarea id="userInput" rows="1" placeholder="Mengobrol dengan Farvion..." onkeydown="handleKeydown(event)" oninput="autoGrow(this)"></textarea>
-          <button class="send-btn" id="sendBtn" onclick="sendMessage()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-          </button>
+          <div class="input-toolbar">
+            <div class="input-toolbar-left">
+              <button class="attach-btn" onclick="openAttachSheet()" aria-label="Opsi lainnya" title="Opsi lainnya">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
+              <div class="composer-model-pill">Gemini 3.5 Flash</div>
+            </div>
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            </button>
+          </div>
         </div>
-        <div class="input-hint">Farvion pakai Gemini API — API key kamu disimpan hanya di sesi browser ini, tidak dikirim ke server manapun selain Google.</div>
       </div>
     </div>
   </div>
 
 </div>
+
+<!-- Hidden file inputs untuk lampiran -->
+<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleImageInput(event)">
+<input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="handleImageInput(event)">
+<input type="file" id="fileInput" accept=".txt,.js,.jsx,.ts,.tsx,.py,.json,.md,.css,.html,.htm,.csv,.xml,.yaml,.yml,.c,.cpp,.h,.java,.go,.rs,.rb,.php,.sh,.sql,.log,text/plain" multiple style="display:none" onchange="handleFileInput(event)">
 
 <!-- API KEY MODAL -->
 <div class="modal-overlay" id="keyModal">
@@ -690,11 +1207,136 @@
       Farvion butuh API key Gemini kamu sendiri untuk jalan. Key ini <b>hanya disimpan di memori browser selama sesi ini</b> — tidak pernah dikirim ke server manapun kecuali langsung ke Google.
       Belum punya key? Ambil gratis di <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.
     </p>
-    <input type="password" class="modal-input" id="apiKeyInput" placeholder="AIza...">
+    <input type="password" class="modal-input" id="apiKeyInput" placeholder="AQ.Ab...">
     <div class="modal-actions">
       <button class="btn-ghost" onclick="closeKeyModal()">Batal</button>
       <button class="btn-primary" onclick="saveApiKey()">Simpan & mulai</button>
     </div>
+  </div>
+</div>
+
+<!-- BOTTOM SHEET (tombol + di composer) -->
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeAttachSheet()"></div>
+<div class="bottom-sheet" id="attachSheet">
+  <div class="sheet-handle-area" id="sheetHandleArea">
+    <div class="sheet-handle"></div>
+  </div>
+  <div class="sheet-header">
+    <button class="sheet-back-btn" id="sheetBackBtn" aria-label="Kembali">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <button class="sheet-close-btn" id="sheetCloseBtn" onclick="closeAttachSheet()" aria-label="Tutup">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="sheet-title" id="sheetTitle"></div>
+    <button class="sheet-action-btn" id="sheetDiscoverBtn" title="Jelajahi konektor lain" aria-label="Jelajahi konektor lain">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+    </button>
+    <div class="sheet-header-spacer" id="sheetHeaderSpacer"></div>
+  </div>
+
+  <div class="sheet-scroll" id="sheetScroll">
+
+    <!-- Halaman utama sheet -->
+    <div class="sheet-page active" id="sheetPageMain">
+      <div class="sheet-grid">
+        <div class="sheet-grid-item active" title="Ambil foto dengan kamera" onclick="triggerCamera()">
+          <div class="sheet-grid-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+          <div class="sheet-grid-item-label">Kamera</div>
+        </div>
+        <div class="sheet-grid-item active" title="Pilih foto dari galeri" onclick="triggerPhoto()">
+          <div class="sheet-grid-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          </div>
+          <div class="sheet-grid-item-label">Foto</div>
+        </div>
+        <div class="sheet-grid-item active" title="Lampirkan file teks (.txt/.js/.py, dll)" onclick="triggerFile()">
+          <div class="sheet-grid-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          </div>
+          <div class="sheet-grid-item-label">File</div>
+        </div>
+      </div>
+
+      <div class="sheet-items">
+        <div class="sheet-item disabled" title="Segera hadir">
+          <div class="sheet-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg>
+          </div>
+          <div>
+            <div class="sheet-item-label">Pencarian web</div>
+            <div class="sheet-item-sub">Segera hadir</div>
+          </div>
+          <div class="sheet-toggle"></div>
+        </div>
+        <div class="sheet-item" id="connectorEntryItem" title="Kelola konektor" onclick="showSheetPage('connectors')">
+          <div class="sheet-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </div>
+          <div>
+            <div class="sheet-item-label">Konektor</div>
+            <div class="sheet-item-sub" id="connectorEntrySub">Hubungkan Farvion ke layanan lain</div>
+          </div>
+          <div class="sheet-item-chevron">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sub-halaman: Konektor (daftar konektor yang SUDAH terhubung) -->
+    <div class="sheet-page" id="sheetPageConnectors">
+      <div class="connector-list" id="connectorConnectedList"></div>
+      <div class="connector-empty" id="connectorEmptyState">
+        <div class="connector-empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        </div>
+        <div class="connector-empty-text">Belum ada konektor. Konektor berfungsi agar Farvion bisa menggunakan aplikasi dan alat Anda.</div>
+      </div>
+    </div>
+
+    <!-- Sub-halaman: Direktori konektor (dibuka lewat ikon kompas) -->
+    <div class="sheet-page" id="sheetPageDirectory">
+      <div class="connector-directory-label">Tersedia</div>
+      <div class="connector-list">
+        <div class="connector-item" id="connectorItemGithub">
+          <div class="connector-item-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.1.78-.25.78-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.36-3.88-1.36-.52-1.34-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.43-2.7 5.41-5.27 5.69.41.36.78 1.06.78 2.14 0 1.54-.01 2.79-.01 3.17 0 .3.21.66.79.55A10.52 10.52 0 0 0 23.5 12c0-6.35-5.15-11.5-11.5-11.5z"/></svg>
+          </div>
+          <div class="connector-item-body">
+            <div class="connector-item-name">GitHub</div>
+            <div class="connector-item-status" id="connectorGithubStatus">Belum terhubung</div>
+          </div>
+          <button class="connector-connect-btn" id="connectorGithubConnectBtn" onclick="connectGithub()">Hubungkan</button>
+          <button class="connector-disconnect-btn" id="connectorGithubDisconnectBtn" onclick="disconnectGithub()" style="display:none;">Putuskan</button>
+        </div>
+
+        <div class="connector-item disabled" title="Segera hadir">
+          <div class="connector-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 3.5a4.95 4.95 0 0 0-7 7l1 1"/><path d="M9.5 20.5a4.95 4.95 0 0 0 7-7l-1-1"/><line x1="8" y1="16" x2="16" y2="8"/></svg>
+          </div>
+          <div class="connector-item-body">
+            <div class="connector-item-name">Notion</div>
+            <div class="connector-item-status">Segera hadir</div>
+          </div>
+          <div class="connector-soon-badge">Segera</div>
+        </div>
+
+        <div class="connector-item disabled" title="Segera hadir">
+          <div class="connector-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          </div>
+          <div class="connector-item-body">
+            <div class="connector-item-name">Slack</div>
+            <div class="connector-item-status">Segera hadir</div>
+          </div>
+          <div class="connector-soon-badge">Segera</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -781,6 +1423,114 @@
   let conversations = {}; // id -> {title, messages: [{role, text}]}
   let currentConvId = null;
   let convCounter = 0;
+  let pendingAttachments = []; // {id, kind:'image'|'file', name, mimeType, dataUrl?, base64?, text?}
+  let attachCounter = 0;
+
+  function triggerCamera(){ closeAttachSheet(); setTimeout(() => { document.getElementById('cameraInput').value=''; document.getElementById('cameraInput').click(); }, 300); }
+  function triggerPhoto(){ closeAttachSheet(); setTimeout(() => { document.getElementById('photoInput').value=''; document.getElementById('photoInput').click(); }, 300); }
+  function triggerFile(){ closeAttachSheet(); setTimeout(() => { document.getElementById('fileInput').value=''; document.getElementById('fileInput').click(); }, 300); }
+
+  const TEXT_EXT_FALLBACK = /\.(txt|js|jsx|ts|tsx|py|json|md|css|html|htm|csv|xml|yaml|yml|c|cpp|h|java|go|rs|rb|php|sh|sql|log)$/i;
+
+  function handleImageInput(event){
+    const files = Array.from(event.target.files || []);
+    files.forEach(file => {
+      if(!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result;
+        const base64 = dataUrl.split(',')[1];
+        pendingAttachments.push({
+          id: 'att' + (++attachCounter),
+          kind: 'image',
+          name: file.name || 'foto.jpg',
+          mimeType: file.type || 'image/jpeg',
+          dataUrl,
+          base64
+        });
+        renderAttachPreview();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function handleFileInput(event){
+    const files = Array.from(event.target.files || []);
+    files.forEach(file => {
+      const isTextLike = file.type.startsWith('text/') || file.type === 'application/json' || TEXT_EXT_FALLBACK.test(file.name);
+      if(!isTextLike){
+        alert('Format file "' + file.name + '" tidak didukung. Gunakan file teks seperti .txt, .js, .py, .json, dll.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        pendingAttachments.push({
+          id: 'att' + (++attachCounter),
+          kind: 'file',
+          name: file.name,
+          mimeType: file.type || 'text/plain',
+          text: reader.result
+        });
+        renderAttachPreview();
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  function removeAttachment(id){
+    pendingAttachments = pendingAttachments.filter(a => a.id !== id);
+    renderAttachPreview();
+  }
+
+  function fileIconSvg(){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
+  }
+
+  // Logo pinwheel Farvion — 6 kelopak melengkung asimetris, dipakai untuk avatar AI
+  // dan sebagai indikator loading/streaming (berputar via CSS class .spin / .loading-pinwheel)
+  function pinwheelLogoSvg(){
+    return `<svg viewBox="0 0 100 100" fill="currentColor">
+      <g>
+        <path d="M50 50 C50 50 48 20 58 8 C66 -1 78 6 76 17 C73 33 50 50 50 50 Z" transform="rotate(0 50 50)"/>
+        <path d="M50 50 C50 50 48 20 58 8 C66 -1 78 6 76 17 C73 33 50 50 50 50 Z" transform="rotate(60 50 50)"/>
+        <path d="M50 50 C50 50 48 20 58 8 C66 -1 78 6 76 17 C73 33 50 50 50 50 Z" transform="rotate(120 50 50)"/>
+        <path d="M50 50 C50 50 48 20 58 8 C66 -1 78 6 76 17 C73 33 50 50 50 50 Z" transform="rotate(180 50 50)"/>
+        <path d="M50 50 C50 50 48 20 58 8 C66 -1 78 6 76 17 C73 33 50 50 50 50 Z" transform="rotate(240 50 50)"/>
+        <path d="M50 50 C50 50 48 20 58 8 C66 -1 78 6 76 17 C73 33 50 50 50 50 Z" transform="rotate(300 50 50)"/>
+      </g>
+    </svg>`;
+  }
+  function closeIconSvg(){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+  }
+
+  function fileExtBadge(name){
+    const m = /\.([a-z0-9]+)$/i.exec(name || '');
+    return m ? m[1].toUpperCase() : 'FILE';
+  }
+
+  function renderAttachPreview(){
+    const row = document.getElementById('attachPreviewRow');
+    row.innerHTML = pendingAttachments.map(att => {
+      if(att.kind === 'image'){
+        return `
+          <div class="attach-image-card" data-id="${att.id}">
+            <img src="${att.dataUrl}" alt="${escapeHtml(att.name)}">
+            <button class="attach-image-card-remove" onclick="removeAttachment('${att.id}')" aria-label="Hapus lampiran">${closeIconSvg()}</button>
+          </div>
+        `;
+      }
+      return `
+        <div class="attach-file-card" data-id="${att.id}">
+          <div class="attach-file-card-top">
+            <div class="attach-file-card-badge">${fileExtBadge(att.name)}</div>
+            <button class="attach-file-card-remove" onclick="removeAttachment('${att.id}')" aria-label="Hapus lampiran">${closeIconSvg()}</button>
+          </div>
+          <div class="attach-file-card-name">${escapeHtml(att.name)}</div>
+        </div>
+      `;
+    }).join('');
+  }
 
   function openSidebar(){
     document.getElementById('sidebar').classList.add('open');
@@ -803,11 +1553,344 @@
     const val = document.getElementById('apiKeyInput').value.trim();
     if(!val){ closeKeyModal(); return; }
     apiKey = val;
+    localStorage.setItem('farvion_gemini_api_key', apiKey);
     document.getElementById('statusDot').className = 'dot on';
     document.getElementById('statusText').textContent = 'API key aktif';
     document.getElementById('sendBtn').disabled = false;
     closeKeyModal();
   }
+
+  // ====== BOTTOM SHEET (tombol + di composer) ======
+  // Sheet punya 2 posisi terbuka: "half" (setengah layar) dan "full" (hampir penuh, seperti screenshot).
+  // - Klik tombol + -> selalu terbuka di posisi "half".
+  // - Drag ke atas melewati ~55% tinggi sheet -> snap ke "full".
+  // - Dari "full", drag ke bawah sampai ~55% -> snap balik ke "half".
+  // - Dari "half", drag ke bawah sampai ~25% -> sheet tertutup (hilang ke bawah).
+  const attachSheet = document.getElementById('attachSheet');
+  const sheetOverlay = document.getElementById('sheetOverlay');
+  const sheetHandleArea = document.getElementById('sheetHandleArea');
+  const sheetScrollEl = document.getElementById('sheetScroll');
+
+  const SHEET_FULL_VH = 90;   // tinggi sheet dalam kondisi "full", dalam vh
+  const SHEET_HALF_VH = 45;   // tinggi sheet dalam kondisi "half" (setengah dari full), dalam vh
+
+  let sheetState = 'closed'; // 'closed' | 'half' | 'full'
+
+  function sheetHeightPx(vh){
+    return window.innerHeight * (vh / 100);
+  }
+
+  // translateY yang dibutuhkan supaya sheet (tinggi = SHEET_FULL_VH) terlihat
+  // sebesar target vh dari bawah layar.
+  function translateForVisibleVh(visibleVh){
+    const fullPx = sheetHeightPx(SHEET_FULL_VH);
+    const visiblePx = sheetHeightPx(visibleVh);
+    return Math.max(0, fullPx - visiblePx);
+  }
+
+  function setSheetTransform(px, animated){
+    attachSheet.style.transition = animated ? '' : 'none';
+    attachSheet.style.transform = `translateY(${px}px)`;
+  }
+
+  function applySheetState(state, animated = true){
+    sheetState = state;
+    if(state === 'closed'){
+      setSheetTransform(sheetHeightPx(SHEET_FULL_VH), animated);
+      sheetOverlay.classList.remove('visible');
+      // baru benar-benar sembunyikan setelah animasi selesai, biar transisinya mulus
+      setTimeout(() => {
+        if(sheetState === 'closed') attachSheet.classList.remove('visible');
+      }, animated ? 320 : 0);
+    } else if(state === 'half'){
+      attachSheet.classList.add('visible');
+      sheetOverlay.classList.add('visible');
+      setSheetTransform(translateForVisibleVh(SHEET_HALF_VH), animated);
+    } else if(state === 'full'){
+      attachSheet.classList.add('visible');
+      sheetOverlay.classList.add('visible');
+      setSheetTransform(translateForVisibleVh(SHEET_FULL_VH), animated);
+    }
+  }
+
+  function openAttachSheet(){
+    showSheetPage('main'); // selalu mulai dari halaman utama tiap kali sheet dibuka
+    attachSheet.classList.add('visible');
+    sheetOverlay.classList.add('visible');
+    // Buka selalu mulai dari posisi tertutup di bawah, lalu animasikan ke "half"
+    setSheetTransform(sheetHeightPx(SHEET_FULL_VH), false);
+    // force reflow supaya transisi berikutnya kepakai
+    attachSheet.offsetHeight;
+    requestAnimationFrame(() => applySheetState('half', true));
+  }
+  function closeAttachSheet(){
+    applySheetState('closed', true);
+  }
+
+  // ====== SUB-HALAMAN DI DALAM SHEET (mis. "Konektor") ======
+  // sheetPage: 'main' (grid + list default), 'connectors' (konektor yang SUDAH
+  // terhubung, atau empty-state kalau belum ada), 'directory' (daftar konektor
+  // yang BISA dihubungkan — dibuka lewat ikon kompas).
+  // Header (judul, tombol back/close/kompas) berubah tergantung halaman aktif.
+  const SHEET_PAGE_IDS = {
+    main: 'sheetPageMain',
+    connectors: 'sheetPageConnectors',
+    directory: 'sheetPageDirectory'
+  };
+  const SHEET_PAGES = {
+    main: { title: '', showBack: false, showDiscover: false, backTarget: 'main' },
+    connectors: { title: 'Konektor', showBack: true, showDiscover: true, backTarget: 'main' },
+    directory: { title: 'Jelajahi konektor', showBack: true, showDiscover: false, backTarget: 'connectors' }
+  };
+  let currentSheetPage = 'main';
+
+  function showSheetPage(page){
+    const cfg = SHEET_PAGES[page] || SHEET_PAGES.main;
+    currentSheetPage = page;
+
+    document.querySelectorAll('.sheet-page').forEach(el => el.classList.remove('active'));
+    document.getElementById(SHEET_PAGE_IDS[page] || SHEET_PAGE_IDS.main).classList.add('active');
+
+    document.getElementById('sheetTitle').textContent = cfg.title;
+    document.getElementById('sheetBackBtn').classList.toggle('visible', cfg.showBack);
+    document.getElementById('sheetCloseBtn').style.display = cfg.showBack ? 'none' : 'flex';
+    document.getElementById('sheetDiscoverBtn').classList.toggle('visible', cfg.showDiscover);
+    // spacer kanan cuma perlu nongol kalau tombol kompas TIDAK tampil (biar judul tetap center)
+    document.getElementById('sheetHeaderSpacer').style.display = cfg.showDiscover ? 'none' : 'block';
+
+    // scroll balik ke atas tiap pindah halaman
+    if(sheetScrollEl) sheetScrollEl.scrollTop = 0;
+  }
+
+  // Tombol back selalu balik sesuai backTarget halaman AKTIF saat ini
+  document.getElementById('sheetBackBtn').onclick = () => {
+    const cfg = SHEET_PAGES[currentSheetPage] || SHEET_PAGES.main;
+    showSheetPage(cfg.backTarget);
+  };
+  // Ikon kompas buka direktori konektor (list yang bisa dihubungkan)
+  document.getElementById('sheetDiscoverBtn').onclick = () => showSheetPage('directory');
+
+  // ====== KONEKTOR: GitHub (OAuth) ======
+  // Status koneksi disimpan di localStorage, sama seperti pola API key Gemini.
+  const GITHUB_TOKEN_KEY = 'farvion_github_access_token';
+  const GITHUB_USER_KEY = 'farvion_github_username';
+  const GITHUB_CLIENT_ID = 'Ov23lidh1YDjeJ71C7cq';
+  // URL Cloudflare Worker yang menukar authorization code -> access_token
+  // (client_secret dipegang di server, tidak pernah ada di kode frontend ini).
+  const GITHUB_TOKEN_EXCHANGE_URL = 'https://farvion-github-oauth.alfinpinzz6.workers.dev';
+  // Karena Farvion adalah static site di GitHub Pages, callback OAuth diarahkan
+  // balik ke halaman utama ini sendiri (bukan route /callback terpisah).
+  const GITHUB_REDIRECT_URI = window.location.origin + window.location.pathname;
+
+  function githubConnectorSvg(){
+    return '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.1.78-.25.78-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.36-3.88-1.36-.52-1.34-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.43-2.7 5.41-5.27 5.69.41.36.78 1.06.78 2.14 0 1.54-.01 2.79-.01 3.17 0 .3.21.66.79.55A10.52 10.52 0 0 0 23.5 12c0-6.35-5.15-11.5-11.5-11.5z"/></svg>';
+  }
+
+  // Sinkronkan: (1) status di item GitHub dalam direktori, (2) list "konektor
+  // terhubung" di halaman utama Konektor + toggle empty-state-nya, (3) sub-label
+  // di item "Konektor" pada sheet utama.
+  function refreshConnectorUI(){
+    const token = localStorage.getItem(GITHUB_TOKEN_KEY);
+    const username = localStorage.getItem(GITHUB_USER_KEY);
+    const isConnected = !!token;
+
+    // --- item di dalam direktori (sheetPageDirectory) ---
+    const statusEl = document.getElementById('connectorGithubStatus');
+    const connectBtn = document.getElementById('connectorGithubConnectBtn');
+    const disconnectBtnDir = document.getElementById('connectorGithubDisconnectBtn');
+
+    if(isConnected){
+      statusEl.textContent = username ? `Terhubung sebagai @${username}` : 'Terhubung';
+      statusEl.classList.add('connected');
+      connectBtn.style.display = 'none';
+      disconnectBtnDir.style.display = 'inline-flex';
+    } else {
+      statusEl.textContent = 'Belum terhubung';
+      statusEl.classList.remove('connected');
+      connectBtn.style.display = 'inline-flex';
+      disconnectBtnDir.style.display = 'none';
+    }
+
+    // --- halaman "Konektor" (list yang sudah terhubung / empty-state) ---
+    const connectedList = document.getElementById('connectorConnectedList');
+    const emptyState = document.getElementById('connectorEmptyState');
+    const entrySub = document.getElementById('connectorEntrySub');
+
+    if(isConnected){
+      connectedList.innerHTML = `
+        <div class="connector-item">
+          <div class="connector-item-icon">${githubConnectorSvg()}</div>
+          <div class="connector-item-body">
+            <div class="connector-item-name">GitHub</div>
+            <div class="connector-item-status connected">${username ? `Terhubung sebagai @${username}` : 'Terhubung'}</div>
+          </div>
+          <button class="connector-disconnect-btn" onclick="disconnectGithub()">Putuskan</button>
+        </div>
+      `;
+      connectedList.style.display = 'flex';
+      emptyState.style.display = 'none';
+      entrySub.textContent = 'GitHub terhubung';
+    } else {
+      connectedList.innerHTML = '';
+      connectedList.style.display = 'none';
+      emptyState.style.display = 'flex';
+      entrySub.textContent = 'Hubungkan Farvion ke layanan lain';
+    }
+  }
+
+  function connectGithub(){
+    const params = new URLSearchParams({
+      client_id: GITHUB_CLIENT_ID,
+      redirect_uri: GITHUB_REDIRECT_URI,
+      scope: 'read:user repo',
+    });
+    window.location.href = `https://github.com/login/oauth/authorize?${params.toString()}`;
+  }
+
+  function disconnectGithub(){
+    localStorage.removeItem(GITHUB_TOKEN_KEY);
+    localStorage.removeItem(GITHUB_USER_KEY);
+    refreshConnectorUI();
+  }
+
+  // Dipanggil sekali saat halaman dimuat: kalau URL mengandung ?code=... berarti
+  // kita baru saja diarahkan balik oleh GitHub setelah user menyetujui otorisasi.
+  // Ambil code itu, kirim ke Cloudflare Worker untuk ditukar jadi access_token.
+  async function handleGithubCallback(){
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if(!code) return;
+
+    // Bersihkan ?code=... dari address bar supaya tidak tertukar lagi kalau di-refresh
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    const connectBtn = document.getElementById('connectorGithubConnectBtn');
+    if(connectBtn){
+      connectBtn.textContent = 'Menghubungkan…';
+      connectBtn.disabled = true;
+    }
+
+    try {
+      const res = await fetch(GITHUB_TOKEN_EXCHANGE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+
+      if(data.error){
+        alert('Gagal menghubungkan GitHub: ' + data.error);
+        return;
+      }
+
+      localStorage.setItem(GITHUB_TOKEN_KEY, data.access_token);
+      if(data.username) localStorage.setItem(GITHUB_USER_KEY, data.username);
+      refreshConnectorUI();
+
+      // Buka langsung ke halaman Konektor supaya user melihat hasilnya
+      openAttachSheet();
+      showSheetPage('connectors');
+    } catch(err){
+      alert('Gagal menghubungkan GitHub. Coba lagi.');
+    } finally {
+      if(connectBtn){
+        connectBtn.textContent = 'Hubungkan';
+        connectBtn.disabled = false;
+      }
+    }
+  }
+
+  refreshConnectorUI();
+  handleGithubCallback();
+
+  // Drag dari mana saja di badan sheet (bukan cuma handle-nya): support touch & mouse
+  let sheetDragStartY = 0;
+  let sheetDragBaseTranslate = 0; // translateY (px) sheet saat drag dimulai
+  let sheetCurrentTranslate = 0;
+  let sheetDragging = false;
+  let sheetDragEnabled = false; // hanya drag kalau start dari handle, atau dari body saat scroll sudah di paling atas
+
+  function sheetDragStart(clientY, fromHandle){
+    // Kalau drag dimulai dari area konten (bukan handle), hanya izinkan drag-sheet
+    // ketika konten sudah di-scroll paling atas (supaya tidak konflik dengan scroll konten).
+    if(!fromHandle && sheetScrollEl && sheetScrollEl.scrollTop > 0){
+      sheetDragEnabled = false;
+      return;
+    }
+    sheetDragEnabled = true;
+    sheetDragStartY = clientY;
+    const currentTransform = attachSheet.style.transform;
+    const match = /translateY\(([-\d.]+)px\)/.exec(currentTransform);
+    sheetDragBaseTranslate = match ? parseFloat(match[1]) : translateForVisibleVh(SHEET_HALF_VH);
+    sheetCurrentTranslate = sheetDragBaseTranslate;
+    sheetDragging = true;
+    attachSheet.classList.add('dragging');
+  }
+  function sheetDragMove(clientY){
+    if(!sheetDragging || !sheetDragEnabled) return;
+    const delta = clientY - sheetDragStartY;
+    const minTranslate = 0; // paling atas: full
+    const maxTranslate = sheetHeightPx(SHEET_FULL_VH); // paling bawah: tertutup total
+    sheetCurrentTranslate = Math.min(maxTranslate, Math.max(minTranslate, sheetDragBaseTranslate + delta));
+    setSheetTransform(sheetCurrentTranslate, false);
+  }
+  function sheetDragEnd(){
+    if(!sheetDragging) return;
+    sheetDragging = false;
+    attachSheet.classList.remove('dragging');
+    if(!sheetDragEnabled) return;
+
+    // Hitung berapa % dari tinggi penuh sheet yang sedang "terlihat" saat ini
+    const fullPx = sheetHeightPx(SHEET_FULL_VH);
+    const visiblePx = fullPx - sheetCurrentTranslate;
+    const visiblePercentOfFull = (visiblePx / fullPx) * 100;
+
+    // Snap logic:
+    // >= 75%  -> full
+    // 25%-75% -> half
+    // < 25%   -> closed
+    if(visiblePercentOfFull >= 75){
+      applySheetState('full', true);
+    } else if(visiblePercentOfFull >= 25){
+      applySheetState('half', true);
+    } else {
+      applySheetState('closed', true);
+    }
+  }
+
+  // Handle (selalu bisa drag dari sini)
+  sheetHandleArea.addEventListener('touchstart', e => sheetDragStart(e.touches[0].clientY, true), { passive: true });
+  sheetHandleArea.addEventListener('touchmove', e => sheetDragMove(e.touches[0].clientY), { passive: true });
+  sheetHandleArea.addEventListener('touchend', sheetDragEnd);
+  sheetHandleArea.addEventListener('mousedown', e => {
+    sheetDragStart(e.clientY, true);
+    const onMove = ev => sheetDragMove(ev.clientY);
+    const onUp = () => {
+      sheetDragEnd();
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  // Seluruh badan sheet juga bisa dipakai buat drag (bukan cuma garis handle-nya)
+  attachSheet.addEventListener('touchstart', e => sheetDragStart(e.touches[0].clientY, false), { passive: true });
+  attachSheet.addEventListener('touchmove', e => sheetDragMove(e.touches[0].clientY), { passive: true });
+  attachSheet.addEventListener('touchend', sheetDragEnd);
+  attachSheet.addEventListener('mousedown', e => {
+    // Jangan trigger drag kalau user klik tombol close atau item yang clickable
+    if(e.target.closest('.sheet-close-btn') || e.target.closest('.sheet-item') || e.target.closest('.sheet-grid-item') || e.target.closest('.connector-item') || e.target.closest('.sheet-back-btn') || e.target.closest('.sheet-action-btn')) return;
+    sheetDragStart(e.clientY, false);
+    const onMove = ev => sheetDragMove(ev.clientY);
+    const onUp = () => {
+      sheetDragEnd();
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
 
   // Sapaan berdasar waktu lokal perangkat, diterjemahkan sesuai bahasa browser user.
   // Fallback ke Inggris kalau bahasa browser tidak ada di daftar.
@@ -939,14 +2022,21 @@
       const row = document.createElement('div');
       row.className = 'msg-row ' + msg.role;
       if(msg.role === 'ai'){
+        const showPinwheel = msg.loading || (msg.streaming && !msg.text);
         row.innerHTML = `
-          <div class="avatar ai">F</div>
-          <div class="msg-bubble">${msg.loading ? '<div class="typing-dots"><span></span><span></span><span></span></div>' : (msg.error ? '<div class="error-note">' + escapeHtml(msg.text) + '</div>' : renderMarkdown(msg.text))}</div>
+          <div class="msg-bubble">${showPinwheel ? '<div class="typing-dots"><div class="loading-pinwheel">' + pinwheelLogoSvg() + '</div></div>' : (msg.error ? '<div class="error-note">' + escapeHtml(msg.text) + '</div>' : renderMarkdown(msg.text))}</div>
         `;
       } else {
+        const atts = msg.attachments || [];
+        const badges = atts.length ? `<div class="msg-attachments">${atts.map(a => {
+          if(a.kind === 'image'){
+            return `<div class="msg-attachment-badge"><img src="${a.dataUrl}" alt=""> ${escapeHtml(a.name)}</div>`;
+          }
+          return `<div class="msg-attachment-badge">${fileIconSvg()} ${escapeHtml(a.name)}</div>`;
+        }).join('')}</div>` : '';
         row.innerHTML = `
           <div class="avatar user">U</div>
-          <div class="msg-bubble">${escapeHtml(msg.text)}</div>
+          <div class="msg-bubble">${badges}${msg.text ? escapeHtml(msg.text) : ''}</div>
         `;
       }
       chatInner.appendChild(row);
@@ -961,7 +2051,8 @@
   async function sendMessage(){
     const input = document.getElementById('userInput');
     const text = input.value.trim();
-    if(!text) return;
+    const attachments = pendingAttachments;
+    if(!text && attachments.length === 0) return;
 
     if(!apiKey){ openKeyModal(); return; }
 
@@ -971,11 +2062,14 @@
 
     const conv = conversations[currentConvId];
     if(conv.messages.length === 0){
-      conv.title = text.length > 32 ? text.slice(0,32) + '…' : text;
+      conv.title = (text || attachments[0]?.name || 'Percakapan baru');
+      conv.title = conv.title.length > 32 ? conv.title.slice(0,32) + '…' : conv.title;
     }
 
-    conv.messages.push({ role:'user', text });
+    conv.messages.push({ role:'user', text, attachments });
     input.value = '';
+    pendingAttachments = [];
+    renderAttachPreview();
     autoGrow(input);
     renderHistory();
     renderChat();
@@ -986,55 +2080,250 @@
     document.getElementById('sendBtn').disabled = true;
 
     try{
-      const systemPrompt = "Kamu adalah Farvion, AI coding companion yang fokus membantu developer web — JavaScript, React, dan Next.js. Jawab dengan jelas, ringkas, dan berikan contoh kode best-practice terbaru bila relevan. Gunakan format markdown dengan code block (```) untuk kode.";
+      const systemPrompt = "Kamu adalah Farvion, asisten AI serba bisa — siap membantu apa saja, mulai dari ngobrol santai, menulis dan menyunting teks, riset dan menjelaskan konsep, brainstorming ide, analisis data, sampai coding dan debugging di berbagai bahasa pemrograman. Sesuaikan gaya jawabanmu dengan konteks pertanyaan: santai kalau ngobrol biasa, terstruktur dan detail kalau diminta analisis mendalam, ringkas kalau user cuma butuh jawaban cepat. Jawab dengan jelas dan jujur, akui kalau tidak tahu sesuatu, dan gunakan format markdown (termasuk code block ```) bila membantu keterbacaan, terutama untuk kode. PENTING: jangan memperkenalkan diri sebagai 'Farvion' atau menyebut namamu sendiri di setiap jawaban — cukup jawab langsung sesuai apa yang ditanyakan/diminta user. Perkenalkan dirimu HANYA kalau user secara eksplisit bertanya siapa kamu/nama kamu (misal 'siapa kamu', 'nama kamu siapa', 'kamu siapa'). Untuk sapaan biasa seperti 'halo', 'hai', 'hi', 'pagi', 'malam' — balas sapaan itu dengan singkat dan hangat TANPA menyebut namamu sendiri sama sekali, dan tanyakan ada yang bisa dibantu. Jangan pernah menyisipkan 'Aku Farvion' atau perkenalan diri di jawaban mana pun kecuali benar-benar ditanya namamu secara langsung. Kamu dibuat/diciptakan oleh Pinzz (seorang developer independen). Sebutkan fakta ini HANYA kalau user secara eksplisit bertanya soal penciptamu/siapa yang membuatmu/developer di baliknya (misal 'siapa yang bikin kamu', 'siapa penciptamu', 'kamu dibuat siapa') — jangan pernah menyebut nama Pinzz di jawaban lain, termasuk saat sekadar disapa atau memperkenalkan diri.";
 
-      const history = conv.messages
-        .filter(m => !m.loading)
-        .slice(0, -1)
-        .map(m => ({
-          role: m.role === 'user' ? 'user' : 'model',
-          parts: [{ text: m.text }]
-        }));
+      const nonLoadingMsgs = conv.messages.filter(m => !m.loading);
+      const lastMsg = nonLoadingMsgs[nonLoadingMsgs.length - 1]; // pesan user yang baru dikirim
+      const history = nonLoadingMsgs.slice(0, -1).map(m => ({
+        role: m.role === 'user' ? 'user' : 'model',
+        parts: buildMessageParts(m)
+      }));
+      const currentParts = buildMessageParts(lastMsg);
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [
               ...history,
-              { role: 'user', parts: [{ text: text }] }
+              { role: 'user', parts: currentParts }
             ],
-            systemInstruction: { parts: [{ text: systemPrompt }] }
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            generationConfig: {
+              thinkingConfig: { thinkingLevel: 'low' }
+            }
           })
         }
       );
 
-      const data = await response.json();
-
-      conv.messages.pop(); // remove loading placeholder
-
       if(!response.ok){
-        const errMsg = data?.error?.message || 'Terjadi kesalahan saat menghubungi Gemini API.';
+        let errMsg = 'Terjadi kesalahan saat menghubungi Gemini API.';
+        try{
+          const errData = await response.json();
+          errMsg = errData?.error?.message || errMsg;
+        } catch(_){}
+        errMsg += '\n\n(HTTP status: ' + response.status + ' ' + response.statusText + ')';
+        conv.messages.pop(); // remove loading placeholder
         conv.messages.push({ role:'ai', text: errMsg, error:true });
+        renderChat();
       } else {
-        const reply = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || 'Maaf, tidak ada respons yang bisa ditampilkan.';
-        conv.messages.push({ role:'ai', text: reply });
+        // Ganti placeholder loading dengan bubble AI kosong yang akan diisi progresif (streaming)
+        const aiMsg = conv.messages[conv.messages.length - 1];
+        aiMsg.loading = false;
+        aiMsg.streaming = true; // logo pinwheel tetap berputar selama teks masih mengalir
+        aiMsg.text = '';
+        resetTypingState(); // pastikan antrian efek ngetik bersih dari respons sebelumnya
+        renderChat();
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+        let sawAnyText = false;
+        let rawFullDump = ''; // untuk debug: kumpulan semua raw text yang diterima dari stream
+
+        const processLine = (line) => {
+          if(!line.startsWith('data:')) return;
+          const jsonStr = line.slice(5).trim();
+          if(!jsonStr || jsonStr === '[DONE]') return;
+          try{
+            const chunk = JSON.parse(jsonStr);
+            console.log('[Farvion debug] chunk diterima:', chunk);
+            const parts = chunk?.candidates?.[0]?.content?.parts || [];
+            // Gemini 3.x mengirim "thought parts" (reasoning internal, thought:true) selain
+            // teks jawaban final — thought parts ini harus dibuang, jangan ikut ditampilkan.
+            const pieces = parts
+              .filter(p => !p.thought && typeof p.text === 'string')
+              .map(p => p.text)
+              .join('');
+            if(pieces){
+              sawAnyText = true;
+              aiMsg.text += pieces;
+              updateStreamingBubble(aiMsg.text);
+            }
+            const finishReason = chunk?.candidates?.[0]?.finishReason;
+            if(finishReason && finishReason !== 'STOP'){
+              console.warn('[Farvion debug] finishReason bukan STOP:', finishReason, chunk);
+            }
+          } catch(parseErr){
+            console.error('[Farvion debug] gagal parse baris SSE:', parseErr, 'raw:', jsonStr);
+          }
+        };
+
+        while(true){
+          const { done, value } = await reader.read();
+          if(done) break;
+
+          const decoded = decoder.decode(value, { stream: true });
+          rawFullDump += decoded;
+          buffer += decoded;
+          // Setiap baris "data: {...}" adalah satu JSON lengkap (SSE format Gemini).
+          // Proses baris demi baris begitu ada \n, sisakan baris terakhir yang mungkin
+          // belum lengkap di buffer untuk digabung dengan chunk berikutnya.
+          let newlineIndex;
+          while((newlineIndex = buffer.indexOf('\n')) !== -1){
+            const line = buffer.slice(0, newlineIndex).trim();
+            buffer = buffer.slice(newlineIndex + 1);
+            processLine(line);
+          }
+        }
+        // proses sisa buffer (kalau stream berakhir tanpa \n penutup di akhir)
+        if(buffer.trim()) processLine(buffer.trim());
+
+        if(!sawAnyText){
+          // DEBUG SEMENTARA: tampilkan potongan raw response langsung di bubble
+          // supaya bisa dibaca tanpa perlu buka console/DevTools.
+          const debugSnippet = rawFullDump.trim()
+            ? rawFullDump.slice(0, 1200)
+            : '(stream kosong — tidak ada satu byte pun yang diterima dari server)';
+          aiMsg.text = 'Maaf, tidak ada respons yang bisa ditampilkan.\n\n--- DEBUG RAW RESPONSE ---\n' + debugSnippet;
+          aiMsg.error = true;
+          resetTypingState();
+        } else {
+          // Tunggu animasi ngetik benar-benar menampilkan seluruh teks sebelum
+          // dianggap "selesai" — supaya pinwheel/status streaming tidak berhenti
+          // duluan sementara teks masih menetes di layar.
+          await flushTypingQueue();
+        }
+        aiMsg.streaming = false;
+        renderChat();
       }
     } catch(err){
-      conv.messages.pop();
+      resetTypingState();
+      const lastAi = conv.messages[conv.messages.length - 1];
+      if(lastAi && lastAi.role === 'ai'){
+        lastAi.streaming = false;
+        if(lastAi.loading || !lastAi.text){
+          conv.messages.pop();
+        }
+      }
       conv.messages.push({ role:'ai', text: 'Gagal terhubung ke Gemini API: ' + err.message, error:true });
+      renderChat();
     }
 
     document.getElementById('sendBtn').disabled = false;
     renderChat();
   }
 
+  // ---------- Efek "mengetik" (typing effect) ----------
+  // Teks dari API sering datang cepat/banyak sekaligus (terutama jawaban pendek),
+  // jadi kalau langsung dirender penuh, kesannya "muncul semua" bukan diketik.
+  // Solusi: teks baru masuk ke antrian (queue), lalu "menetes" ke layar sedikit
+  // demi sedikit dengan jeda kecil, terpisah dari kecepatan network/API.
+  let typingQueue = '';        // sisa karakter yang belum ditampilkan
+  let typingDisplayed = '';    // teks yang sudah tampil di layar saat ini
+  let typingTimer = null;      // handle setTimeout untuk drip loop
+  let typingBubbleGetter = null; // fungsi untuk ambil elemen bubble aktif
+
+  const TYPING_CHARS_PER_TICK = 2;   // berapa karakter dikeluarkan tiap tick (naikkan biar lebih cepat)
+  const TYPING_TICK_MS = 18;         // jeda antar tick dalam ms (turunkan biar lebih cepat)
+
+  function startTypingLoop(){
+    if(typingTimer) return; // loop sudah jalan
+    const tick = () => {
+      if(typingQueue.length === 0){
+        typingTimer = null;
+        return;
+      }
+      const take = typingQueue.slice(0, TYPING_CHARS_PER_TICK);
+      typingQueue = typingQueue.slice(TYPING_CHARS_PER_TICK);
+      typingDisplayed += take;
+      renderTypingDisplay();
+      typingTimer = setTimeout(tick, TYPING_TICK_MS);
+    };
+    tick();
+  }
+
+  function renderTypingDisplay(){
+    const chatInner = document.getElementById('chatInner');
+    const rows = chatInner.querySelectorAll('.msg-row.ai');
+    const lastRow = rows[rows.length - 1];
+    if(!lastRow) return;
+    const bubble = lastRow.querySelector('.msg-bubble');
+    if(!bubble) return;
+    bubble.innerHTML = renderMarkdown(typingDisplayed);
+    const scroll = document.getElementById('chatScroll');
+    scroll.scrollTop = scroll.scrollHeight;
+  }
+
+  // Dipanggil tiap kali ada potongan teks baru dari stream API — cuma nambah ke
+  // antrian, tidak langsung render (biar efek ngetik konsisten walau API cepat).
+  function updateStreamingBubble(fullText){
+    // fullText adalah akumulasi teks total sejauh ini; kita cuma butuh bagian
+    // yang belum masuk antrian atau sudah ditampilkan.
+    const alreadyAccountedFor = typingDisplayed.length + typingQueue.length;
+    if(fullText.length > alreadyAccountedFor){
+      typingQueue += fullText.slice(alreadyAccountedFor);
+    }
+    startTypingLoop();
+  }
+
+  // Pastikan sisa antrian langsung ditampilkan penuh (dipanggil saat stream API selesai,
+  // supaya user tidak perlu nunggu drip-feed menghabiskan teks yang sudah lengkap).
+  function flushTypingQueue(){
+    return new Promise(resolve => {
+      const checkDone = () => {
+        if(typingQueue.length === 0){
+          resolve();
+        } else {
+          setTimeout(checkDone, TYPING_TICK_MS);
+        }
+      };
+      checkDone();
+    });
+  }
+
+  function resetTypingState(){
+    typingQueue = '';
+    typingDisplayed = '';
+    if(typingTimer){ clearTimeout(typingTimer); typingTimer = null; }
+  }
+
+  // Bangun parts (teks + gambar inline + isi file sebagai konteks teks) untuk satu pesan
+  function buildMessageParts(msg){
+    const parts = [];
+    const atts = msg.attachments || [];
+
+    atts.filter(a => a.kind === 'file').forEach(a => {
+      parts.push({ text: `[Lampiran file: ${a.name}]\n\`\`\`\n${a.text}\n\`\`\`` });
+    });
+
+    atts.filter(a => a.kind === 'image').forEach(a => {
+      parts.push({ inlineData: { mimeType: a.mimeType, data: a.base64 } });
+    });
+
+    if(msg.text) parts.push({ text: msg.text });
+    else if(parts.length === 0) parts.push({ text: '' });
+
+    return parts;
+  }
+
   // init
   newChat();
   document.getElementById('userInput').focus();
   // Tampilan awal (login screen vs app) diatur oleh auth.onAuthStateChanged di atas
+
+  // Muat API key yang tersimpan di perangkat ini, kalau ada
+  (function loadSavedApiKey(){
+    const saved = localStorage.getItem('farvion_gemini_api_key');
+    if(saved){
+      apiKey = saved;
+      document.getElementById('statusDot').className = 'dot on';
+      document.getElementById('statusText').textContent = 'API key aktif';
+      document.getElementById('sendBtn').disabled = false;
+    }
+  })();
 </script>
 
 </body>
