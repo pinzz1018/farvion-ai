@@ -218,15 +218,6 @@
     transition: background .15s ease;
   }
   .hamburger-btn:hover{ background: rgba(43,38,32,0.07); }
-  .model-pill{
-    font-size: 12px;
-    color: var(--ink-soft);
-    background: var(--cream-2);
-    padding: 5px 12px;
-    border-radius: 20px;
-    border: 1px solid var(--line);
-  }
-
   .chat-scroll{
     flex:1;
     overflow-y:auto;
@@ -868,6 +859,103 @@
     padding: 10px 16px 6px 16px;
   }
 
+  /* ==== Sub-halaman: pilih metode koneksi (OAuth vs PAT) ==== */
+  .connector-method-list{
+    padding: 14px 12px 24px 12px;
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+  }
+  .connector-method-card{
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    padding: 16px 14px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    text-align:left;
+    cursor:pointer;
+    font-family: inherit;
+    transition: border-color .12s ease, background .12s ease;
+  }
+  .connector-method-card:hover{ border-color: var(--terracotta-deep); background: var(--terracotta-pale); }
+  .connector-method-icon{
+    width: 40px; height:40px;
+    border-radius: 10px;
+    background: var(--ink);
+    color: var(--paper);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .connector-method-icon svg{ width:20px; height:20px; }
+  .connector-method-body{ flex:1; min-width:0; }
+  .connector-method-name{
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 2px;
+  }
+  .connector-method-desc{
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    line-height: 1.4;
+  }
+
+  /* ==== Sub-halaman: form Personal Access Token ==== */
+  .connector-pat-form{
+    padding: 18px 20px 28px 20px;
+    display:flex;
+    flex-direction:column;
+  }
+  .connector-pat-label{
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .connector-pat-input{
+    width: 100%;
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 14px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--ink);
+    outline: none;
+  }
+  .connector-pat-input:focus{ border-color: var(--terracotta-deep); }
+  .connector-pat-error{
+    font-size: 12.5px;
+    color: var(--danger);
+    margin-top: 8px;
+    min-height: 16px;
+    line-height: 1.4;
+  }
+  .connector-pat-submit{
+    margin-top: 14px;
+    width: 100%;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--paper);
+    background: var(--ink);
+    border: none;
+    padding: 13px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .connector-pat-submit:disabled{ opacity: .6; cursor: default; }
+  .connector-pat-help{
+    display:block;
+    margin-top: 14px;
+    font-size: 12.5px;
+    color: var(--terracotta-deep);
+    text-align:center;
+    text-decoration:none;
+    font-weight: 500;
+  }
+
   /* ==== Lampiran (attachments) ==== */
   .attach-preview-row{
     display:flex;
@@ -1075,7 +1163,7 @@
     white-space:nowrap;
     font-weight:500;
   }
-  .logout-btn{
+  .settings-btn{
     background:none; border:none;
     color: var(--ink-soft);
     cursor:pointer;
@@ -1084,7 +1172,113 @@
     flex-shrink:0;
     border-radius:6px;
   }
-  .logout-btn:hover{ background: rgba(43,38,32,0.06); color: var(--danger); }
+  .settings-btn:hover{ background: rgba(43,38,32,0.06); color: var(--ink); }
+
+  /* ---------- HALAMAN FULL-SCREEN: Pengaturan & Pilih bahasa ---------- */
+  .fullscreen-page{
+    position: fixed;
+    inset: 0;
+    background: var(--cream);
+    z-index: 300;
+    display: none;
+    flex-direction: column;
+  }
+  .fullscreen-page.visible{ display: flex; }
+  .fullscreen-header{
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--line);
+    flex-shrink:0;
+  }
+  .fullscreen-back-btn{
+    width: 34px; height:34px;
+    border-radius: 50%;
+    border:none;
+    background:transparent;
+    color: var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .fullscreen-back-btn:hover{ background: rgba(43,38,32,0.06); }
+  .fullscreen-title{
+    font-family: 'Source Serif 4', serif;
+    font-size: 19px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .fullscreen-body{
+    flex:1;
+    overflow-y:auto;
+    padding: 10px 14px 24px 14px;
+  }
+  .settings-menu-item{
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    padding: 15px 12px;
+    border-radius: 12px;
+    cursor:pointer;
+    background:none;
+    border:none;
+    width:100%;
+    text-align:left;
+    font-family: inherit;
+  }
+  .settings-menu-item:hover{ background: var(--paper); }
+  .settings-menu-icon{
+    width: 20px; height:20px;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    font-size: 17px;
+    color: var(--ink-soft);
+  }
+  .settings-menu-icon svg{ width:19px; height:19px; }
+  .settings-menu-label{
+    flex:1;
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .settings-menu-item.danger .settings-menu-icon,
+  .settings-menu-item.danger .settings-menu-label{
+    color: var(--danger);
+  }
+  .settings-menu-divider{
+    height:1px;
+    background: var(--line);
+    margin: 10px 4px;
+  }
+  .language-option{
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    padding: 15px 12px;
+    border-radius: 12px;
+    cursor:pointer;
+    background:none;
+    border:none;
+    width:100%;
+    text-align:left;
+    font-family: inherit;
+  }
+  .language-option:hover{ background: var(--paper); }
+  .language-option-label{
+    flex:1;
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .language-option-check{
+    color: var(--terracotta-deep);
+    display:flex;
+    flex-shrink:0;
+    visibility:hidden;
+  }
+  .language-option.active .language-option-check{ visibility:visible; }
+  .language-option-check svg{ width:18px; height:18px; }
 </style>
 </head>
 <body>
@@ -1095,13 +1289,13 @@
     <div class="empty-mark" style="margin-left:auto;margin-right:auto;">
       <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADYCAMAAACZUFw3AAAAP1BMVEUAAAAMM68MFHYbK4gmMoYQFZ8mLXlWWJIAAP9eV3MRUKEFanAcJ3v7+vWimZhMOHEAAAAAAAAAAAAAAAAAAAD3tqBOAAAAEHRSTlMA/QmgZAxZGAETDgaXAgkbM4sT8gAADWRJREFUeNrtXWmTqyoQxWZHk/z/f/tY3AWkEW/i1PPDrblVmYnH3k4fGiTk/6vgkgT+AgwgQvwNJPb6G0iA0I79BSRAWPcnkPREdl33B7xLEWKBdED485F0fwOJi3Z3fRQ8HYjwQCgB9fy05a7h4QFvJiBPT1396Fr2ejbtAgITkO7PAKFPRrIG8ugw2QDp9HNz8BYItcH/8II4O9dTqYqc68jDnQt2QOhTTbIHYnlw/xdixJrkBQ8FMmyB2Hg3T+5HVtczCf3YIW5NAk/E8T4A6TR5nkmCivIHTNLvk9ZTTXIoI09NXJGk5a7XA/NWDIct7w+LEk10FMjjesV4rD8w3BMh8kSBPo7jeb4lE0Csbz2JzZtoFRl960mlhKdC5Hm+1SUv8iiDiDQQ+aAgOXaHj6XAaRxPChKzERkfDATSOetR0R7tcmN0C37es0QWyGPS1olndYbIkKTNbzNhlWhFVs2V8USf/3jYw4lnjUAMMZ18tGeNSyXc8sqfbk4gW0QWIA4v/W0g7AQIH4n8j5cURboSIL033A/rXPzUs0IdCSnhh4PkNNQdEDV9rn2QKNVL8Bf3l/9R9jUF6wxHt27qm0pQFkHmCQP0TXNWsMLU1DeiK8rMGLQkjDG6uhgjUo+3Z1QxEFEIhDZffjfu/tNfy5h8ecv0jUJklFFaNieSc3b6vQGNLrPLKc/y3qQXw7VZfZdDV3xR5ojR2WpmgWd1W8O9mniVZl2HwfK2dQIq9awlRIwNcN20XXSPFwWlo9YsXF0p62OIzL7waVNJOM6/Jihpz/oUhIh1ULn6r2xVic8z/w6KTnbb5tzALk2tI0m0AkLcoLTAQWEpo2SFuYkx9gr0PXKdLRA9Dom9ncSgOC0wyEZQbUsb4fwOCo3SnTZVZmOQ1rSxx6YvF/SHO9Cn5dCNOm2Lf2v+qwAbKBHvPmeMtqfqCb9XQIX0alnSvTiyy6WOTJO7lWA8kv2OilPGaCyQXWK7Q38wBYxvew1bJGdAhBMXxT/Q5gGNZG+TE7oIx9XeexShGiS8GAgn8mizm6QtqPGuFQfNO5aMpMa7dJS+gPal7kRls8XgAl0kZMcbLonlkMut6CwQhyPyp3tyl5KNr4yfWQmRuQCJp3d9n0SHRyJD6uozxhSuH/vXC4oFZDyaujJAhHMsGv3VL8uesfY1DWQ4VvR/slat4I10Lg05IDSJ4+5ZIXQ5YctKQSJhiYyg3UBDSdMuZBJ2bYZO/JJO548GnmXapi4X74k6Apk+5WJdV/3Y3zZEokkfr+wi1x9cEePBeASCDk1T1+AKhY4WkHQ6r/UsmFYRYPC19iR1vVBI/MPFJKxUzgJ3m2HBCaLXNMkyCvC0cery7h7Jyzkf3SUc5W6zhA8CE3Rl83MmjEISowSQfRwbg/Qjhpcl+8uSE9tf9LCWo1XjcsJt4hoOVoJ0k7KKkN7/9P7klpyuTBZyDBJ6zHS5QLfmGhfBlI9WydAYxnTZXI841AueXXUf+xhw/5o6EAjtGBMnmqj3gSqe3IHzqVpb+Otd3vtqing42yjMZCwfIA4GXECBmgHpyZuWBwndCpE6p1K6RGAuwcAdVQKktNF6q7UFnEGGdHy42LhmjQ67kblY4LaQ9ZqzJA3SxBrjwiqyPyl6dmwdJJBsmam3srwMw4kFFaRf4IKEpgxCe7/axa7DqFq2s0ytoNV6L5VExBsByrw5WsCo5c68wCi2F3yvPCu6YtfIq7r6UyQK7oDNcUEjbaG3BrSCcWU9+NQnFrrFDo3ZCOPFuq/jCLxInPjWdGKb0oeBCY5e0W9UCuPLv7mbmUNcbj7mJotc5eC0FY5OAh6IItKEcUejfSZ+s5xvwZ6teBgt6vhGxEfi6A0cZhx5xirjMjpdchYjwakaWsPh0CgUY36TnDHi2k6Qc6iQOPcWoQUR06gOHZ1KtoSBC3Tl6/+hV6DjKB0ftZhY5+5Zl7PZoAMM3RQGDgfPdJ8jFveBKD9n43iNuMMaOBzcRXTu+yl7eSivw6deruQ5oPRtuTpkMsP9OKBoRHDKqTu7eYmUEymCVVvDQOAo56ZUBLPYu6YbDWLkmQq9sFom+98x8TSZZWUXEcY3wdWfYZjmulvVwWIcgE0xjkOFhEwgGOatlrXu+XoRLQW7CIiS0ta2YmzL/X2/Z8oXHc3ZxouDHA2LqPsyolr9YaT0pFqoZnUMwm0rkpmmJROeV42URXXxkESPHm3chv6BNpi1GD05Gh+HuSVDZqtipQGuV2DKjFyGzrU80AIqTJB7IQAt/UJbtqB864dukliGzcIgjaGFsJEDSu3CCMFUwSZJ39pEmWVtODXn7TcMjFhO7OLTIif/FEcgYQGEAEuQ35mR4vDh4GPJ4B8/VM4R9XUcVMiJ3hj33W58PxxSLvJ5m3u7vG0V2nf5IRUalKzwuQKBjp2Kp+zW6Y3biMu9LSAxp7WmBmQpM1KCcBeM27vKd3eFvKveFXfvsyqXcqoRZCLDzG+IYYHriBMkIQYIyEMXDoDePni6pu5uWRgppdaxMhccXU+OHrpEOkra9HwJj5rp6Svduz8Hva4R33LrMZRFZvWU/zK+Wkz+sCVcRZDpZgEilGR6kiYCWwN5YV9i6oyGyfMdJ9ze9ooLavsUtkHqZoH1yOfpJHfxguUixvTCz4wx0vDChffp8epMJuWw2h5m65jWn480fvcli7NzPummq40iDoksSxsH+79KFw/64zLGGH/AYaJFrLinoPNSrnUS3iGRjGnERmS43LcWvlrmGCAhI5pAbiRHEtU3THMD9ts/q46IozcRoJrbvWP5BMKN8rbQeLa9mjKDzYy5xo0frFVjKMtYw94YtlOF2uVvW0Jm9XqryNM6m9BXIQ61qlUua/A+zFTUiVGbcVK2HU7xSLCNAi+lvSuDeB0hyAbVC64SVlva9mskvp6ghsAC6SzLWLBewFDk2poSbIZP2CGRaIJaIgGC0Ezo8jtq1BirNTVjq44mGSBuZ26xvCEQ9H0amWHzVmJ+od0VBLZBEUntvWtASizuGi+MxEu79ebbOjVowbFNgUOMxHlaf2p0XFM47iUSM3QgV3GIbQrjkfE563CWc7zFuUCOYb1sekQjDnoFx74/H5x+E5ULJU+rDswQgh4xeTm3AtIGx6HLdHWkjwufoKKqw7jwgl/mNGwRUy+pWuK45TNkrTgp+Tip3seAhsBHmWDGLJ1mxQSAWn6sb9oNgUiXydIjjSEu+/1Nc6htq2ClXg/VOCSJzjS5hdHPCRX0M8vcd22yyZYYqI8PG2aGxHfm5cQZuGlLaHXe9WEW1Ukgr/ox0v6Ywws4hKM2KjoWewKkmKEjcICsdytI7pOTZ7oflbgBhkKmUudWJm1QeS7wy6b7Qnkl33WZR2WmtXXBflndcNdbXA4qMgdkM16RxA/tkNRVEBsd48qkTmWKMm3ctEJSJcTTz0LskoP8hYtgrbYdV5RCJxnNK3rpQ3HLzg2zEd/k9ag9/uwN2DA7lXn5QBmQNvt1OTJCPIx+bVCeA1LERFsgQS7lutjYUta0Z9KpBS1JgPBPyck8QbPvlpPPubTUtngPXLExOImcQJc5sIJGm5SksncNhSmdzGLjpP9hb2O65AUghaRhuHgYR5np/bIY7+N/QOSBlHru5QNzy1wquUqceeQhF/Fy2RiuFBFxNgRwogdA7kUjZ2e+HFa67qJZwRh9LS8IK4CIFo3f41l+5tWoeoKDJUD1xSR3ZpyvGX2BTVkWiEHUKVZtkvS3xEsfMn8TXJA49qhqQ4QmnapwXi13XAdZzr4ujfdK51LxU3B0/uDVzfXJPHEvLaA4kFZ9u1gXBPmO0jyQD4aVVu83klEY0MI9Zy0R1bjJSiQi4lXo3a8sn4UMRqOhbYCIirfNZM6imrsMRMNTeY4x3auG0LKojo8XFe6VRGUNZKhUYnPn0EyFF2GSOk2FbtyqLvVlToWoUTLrTNJktSKdlqYjjgATJVUnbu1E9dZEB2ZNlXe3Mq73XIcuqhhnaQulOVUwrvdqafkOJWauCiidvOJYumkQhV89B07nox3pXBptks88snBVrUy+RHc+UxORufB39GmDI7GEuJVGMIsXGq1qtxOQxakUiiCP+FpyeZ/+yfOmGyD6tvL+HkCpRkD0aXVDIME+X93mLSYZ59q8AgIxLXvbcca1RGX7aBHHjn3vRV2JUyX3kre+LQXfvFoP29kGXTzc9sV3bUeZyv7JFh/W9c03DEbDZH8/fWnD+MV4J7GnrQ/TJqWbFrT6pk2GgnVOXhYo9IsmgYh2GWn4oGz955tv21ZHJH2svSib9YcvvknY2mQooRtuKIIVlEX1Q96l42pCyckvwzffxHnYKJAaa1Bw/rK5775TdE8gX6mbcVLByUE24qtIdoQ9E7O+VGTP3YLG85tYJOtAyXp6OI5A0K47Ece+FvKiOI32rvC9kgcm6O++/Hy9+eGcAPahiEPsKBui4ctIlpWTkso2b12QwKbDvQfBBMDX3+q87KUq5eSoXd//FskYKhiy0fdmfOfy+M8vQLGur8V3e/CmVqG//P5yBGVxBwjK7ybRNpcbWJQ3/v3/AF/HdM7Hmv1dAAAAAElFTkSuQmCC" alt="Farvion" style="object-fit:contain;">
     </div>
-    <h1>Masuk ke Farvion</h1>
-    <p>Masuk dengan akun Google kamu untuk mulai mengobrol dengan Farvion, asisten AI kamu untuk semua hal.</p>
+    <h1 data-i18n="login.title">Masuk ke Farvion</h1>
+    <p data-i18n="login.desc">Masuk dengan akun Google kamu untuk mulai mengobrol dengan Farvion, asisten AI kamu untuk semua hal.</p>
     <button class="google-btn" id="googleLoginBtn" onclick="signInWithGoogle()">
       <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
-      Masuk dengan Google
+      <span data-i18n="login.googleBtn">Masuk dengan Google</span>
     </button>
-    <div class="login-loading" id="loginLoading" style="display:none;">Menghubungkan ke Google...</div>
+    <div class="login-loading" id="loginLoading" style="display:none;" data-i18n="login.connecting">Menghubungkan ke Google...</div>
     <div class="login-error" id="loginError" style="display:none;"></div>
   </div>
 </div>
@@ -1120,44 +1314,92 @@
         </div>
         <div>
           <div class="brand-name">Farvion</div>
-          <div class="brand-sub">Asisten AI serba bisa</div>
+          <div class="brand-sub" data-i18n="brand.sub">Asisten AI serba bisa</div>
         </div>
       </div>
-      <button class="close-sidebar-btn" onclick="closeSidebar()" aria-label="Tutup sidebar">
+      <button class="close-sidebar-btn" onclick="closeSidebar()" aria-label="Tutup sidebar" data-i18n-aria="a11y.closeSidebar">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
     </div>
 
     <div class="new-chat-btn" onclick="newChat()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-      New chat
+      <span data-i18n="sidebar.newChat">Percakapan baru</span>
     </div>
 
-    <div class="side-section-label">Riwayat</div>
+    <div class="side-section-label" data-i18n="sidebar.history">Riwayat</div>
     <div id="historyList"></div>
 
     <div class="sidebar-footer">
       <div class="user-chip" id="userChip">
         <img id="userAvatar" src="" alt="">
         <span class="user-name" id="userChipName"></span>
-        <button class="logout-btn" onclick="signOutUser()" aria-label="Keluar" title="Keluar">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        <button class="settings-btn" onclick="openSettingsPage()" aria-label="Pengaturan" title="Pengaturan" data-i18n-aria="settings.title" data-i18n-title="settings.title">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
       </div>
       <div class="api-status" onclick="openKeyModal()">
         <div class="dot off" id="statusDot"></div>
-        <span id="statusText">API key belum diatur</span>
+        <span id="statusText" data-i18n="sidebar.apiKeyNotSet">API key belum diatur</span>
       </div>
+    </div>
+  </div>
+
+  <!-- HALAMAN FULL-SCREEN: Pengaturan -->
+  <div class="fullscreen-page" id="settingsPage">
+    <div class="fullscreen-header">
+      <button class="fullscreen-back-btn" onclick="closeSettingsPage()" aria-label="Kembali" data-i18n-aria="a11y.back">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="fullscreen-title" data-i18n="settings.title">Pengaturan</div>
+    </div>
+    <div class="fullscreen-body">
+      <button class="settings-menu-item" onclick="openLanguagePage()">
+        <div class="settings-menu-icon" style="color:#1a1a1a;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        </div>
+        <div class="settings-menu-label" data-i18n="settings.language">Pilih bahasa</div>
+      </button>
+      <div class="settings-menu-divider"></div>
+      <button class="settings-menu-item danger" onclick="signOutUser()">
+        <div class="settings-menu-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        </div>
+        <div class="settings-menu-label" data-i18n="settings.logout">Logout</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- HALAMAN FULL-SCREEN: Pilih bahasa -->
+  <div class="fullscreen-page" id="languagePage">
+    <div class="fullscreen-header">
+      <button class="fullscreen-back-btn" onclick="closeLanguagePage()" aria-label="Kembali" data-i18n-aria="a11y.back">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="fullscreen-title" data-i18n="settings.language">Pilih bahasa</div>
+    </div>
+    <div class="fullscreen-body">
+      <button class="language-option" id="langOptionId" onclick="setLanguage('id')">
+        <div class="language-option-label">Bahasa Indonesia</div>
+        <div class="language-option-check">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+      </button>
+      <button class="language-option" id="langOptionEn" onclick="setLanguage('en')">
+        <div class="language-option-label">English</div>
+        <div class="language-option-check">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+      </button>
     </div>
   </div>
 
   <!-- MAIN -->
   <div class="main">
     <div class="topbar">
-      <button class="hamburger-btn" onclick="openSidebar()" aria-label="Buka sidebar">
+      <button class="hamburger-btn" onclick="openSidebar()" aria-label="Buka sidebar" data-i18n-aria="a11y.openSidebar">
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
       </button>
-      <div class="model-pill">Gemini 3.5 Flash</div>
     </div>
 
     <div class="chat-scroll" id="chatScroll">
@@ -1175,13 +1417,13 @@
       <div class="input-inner">
         <div class="attach-preview-row" id="attachPreviewRow"></div>
         <div class="input-box">
-          <textarea id="userInput" rows="1" placeholder="Mengobrol dengan Farvion..." onkeydown="handleKeydown(event)" oninput="autoGrow(this)"></textarea>
+          <textarea id="userInput" rows="1" placeholder="Mengobrol dengan Farvion..." data-i18n-placeholder="composer.placeholder" onkeydown="handleKeydown(event)" oninput="autoGrow(this)"></textarea>
           <div class="input-toolbar">
             <div class="input-toolbar-left">
-              <button class="attach-btn" onclick="openAttachSheet()" aria-label="Opsi lainnya" title="Opsi lainnya">
+              <button class="attach-btn" onclick="openAttachSheet()" aria-label="Opsi lainnya" title="Opsi lainnya" data-i18n-aria="a11y.moreOptions" data-i18n-title="a11y.moreOptions">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
               </button>
-              <div class="composer-model-pill">Gemini 3.5 Flash</div>
+              <div class="composer-model-pill">Farvion Nova 1.0</div>
             </div>
             <button class="send-btn" id="sendBtn" onclick="sendMessage()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
@@ -1202,15 +1444,15 @@
 <!-- API KEY MODAL -->
 <div class="modal-overlay" id="keyModal">
   <div class="modal-box">
-    <h2>Masukkan API Key Gemini</h2>
-    <p>
+    <h2 data-i18n="modal.apiKeyTitle">Masukkan API Key Gemini</h2>
+    <p data-i18n-html="modal.apiKeyDesc">
       Farvion butuh API key Gemini kamu sendiri untuk jalan. Key ini <b>hanya disimpan di memori browser selama sesi ini</b> — tidak pernah dikirim ke server manapun kecuali langsung ke Google.
       Belum punya key? Ambil gratis di <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.
     </p>
     <input type="password" class="modal-input" id="apiKeyInput" placeholder="AQ.Ab...">
     <div class="modal-actions">
-      <button class="btn-ghost" onclick="closeKeyModal()">Batal</button>
-      <button class="btn-primary" onclick="saveApiKey()">Simpan & mulai</button>
+      <button class="btn-ghost" onclick="closeKeyModal()" data-i18n="modal.cancel">Batal</button>
+      <button class="btn-primary" onclick="saveApiKey()" data-i18n="modal.saveStart">Simpan & mulai</button>
     </div>
   </div>
 </div>
@@ -1222,14 +1464,14 @@
     <div class="sheet-handle"></div>
   </div>
   <div class="sheet-header">
-    <button class="sheet-back-btn" id="sheetBackBtn" aria-label="Kembali">
+    <button class="sheet-back-btn" id="sheetBackBtn" aria-label="Kembali" data-i18n-aria="a11y.back">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
     </button>
-    <button class="sheet-close-btn" id="sheetCloseBtn" onclick="closeAttachSheet()" aria-label="Tutup">
+    <button class="sheet-close-btn" id="sheetCloseBtn" onclick="closeAttachSheet()" aria-label="Tutup" data-i18n-aria="a11y.close">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </button>
     <div class="sheet-title" id="sheetTitle"></div>
-    <button class="sheet-action-btn" id="sheetDiscoverBtn" title="Jelajahi konektor lain" aria-label="Jelajahi konektor lain">
+    <button class="sheet-action-btn" id="sheetDiscoverBtn" title="Jelajahi konektor lain" aria-label="Jelajahi konektor lain" data-i18n-title="a11y.discoverConnectors" data-i18n-aria="a11y.discoverConnectors">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
     </button>
     <div class="sheet-header-spacer" id="sheetHeaderSpacer"></div>
@@ -1240,44 +1482,44 @@
     <!-- Halaman utama sheet -->
     <div class="sheet-page active" id="sheetPageMain">
       <div class="sheet-grid">
-        <div class="sheet-grid-item active" title="Ambil foto dengan kamera" onclick="triggerCamera()">
+        <div class="sheet-grid-item active" title="Ambil foto dengan kamera" data-i18n-title="a11y.takePhoto" onclick="triggerCamera()">
           <div class="sheet-grid-item-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
           </div>
-          <div class="sheet-grid-item-label">Kamera</div>
+          <div class="sheet-grid-item-label" data-i18n="sheet.camera">Kamera</div>
         </div>
-        <div class="sheet-grid-item active" title="Pilih foto dari galeri" onclick="triggerPhoto()">
+        <div class="sheet-grid-item active" title="Pilih foto dari galeri" data-i18n-title="a11y.pickPhoto" onclick="triggerPhoto()">
           <div class="sheet-grid-item-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
           </div>
-          <div class="sheet-grid-item-label">Foto</div>
+          <div class="sheet-grid-item-label" data-i18n="sheet.photo">Foto</div>
         </div>
-        <div class="sheet-grid-item active" title="Lampirkan file teks (.txt/.js/.py, dll)" onclick="triggerFile()">
+        <div class="sheet-grid-item active" title="Lampirkan file teks (.txt/.js/.py, dll)" data-i18n-title="a11y.attachFile" onclick="triggerFile()">
           <div class="sheet-grid-item-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
           </div>
-          <div class="sheet-grid-item-label">File</div>
+          <div class="sheet-grid-item-label" data-i18n="sheet.file">File</div>
         </div>
       </div>
 
       <div class="sheet-items">
-        <div class="sheet-item disabled" title="Segera hadir">
+        <div class="sheet-item disabled" title="Segera hadir" data-i18n-title="sheet.comingSoon">
           <div class="sheet-item-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg>
           </div>
           <div>
-            <div class="sheet-item-label">Pencarian web</div>
-            <div class="sheet-item-sub">Segera hadir</div>
+            <div class="sheet-item-label" data-i18n="sheet.webSearch">Pencarian web</div>
+            <div class="sheet-item-sub" data-i18n="sheet.comingSoon">Segera hadir</div>
           </div>
           <div class="sheet-toggle"></div>
         </div>
-        <div class="sheet-item" id="connectorEntryItem" title="Kelola konektor" onclick="showSheetPage('connectors')">
+        <div class="sheet-item" id="connectorEntryItem" title="Kelola konektor" data-i18n-title="a11y.manageConnectors" onclick="showSheetPage('connectors')">
           <div class="sheet-item-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
           </div>
           <div>
-            <div class="sheet-item-label">Konektor</div>
-            <div class="sheet-item-sub" id="connectorEntrySub">Hubungkan Farvion ke layanan lain</div>
+            <div class="sheet-item-label" data-i18n="sheet.connectors">Konektor</div>
+            <div class="sheet-item-sub" id="connectorEntrySub" data-i18n="sheet.connectorsSub">Hubungkan Farvion ke layanan lain</div>
           </div>
           <div class="sheet-item-chevron">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
@@ -1293,13 +1535,13 @@
         <div class="connector-empty-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
         </div>
-        <div class="connector-empty-text">Belum ada konektor. Konektor berfungsi agar Farvion bisa menggunakan aplikasi dan alat Anda.</div>
+        <div class="connector-empty-text" data-i18n="connectors.emptyText">Belum ada konektor. Konektor berfungsi agar Farvion dapat menggunakan aplikasi dan alat Anda.</div>
       </div>
     </div>
 
     <!-- Sub-halaman: Direktori konektor (dibuka lewat ikon kompas) -->
     <div class="sheet-page" id="sheetPageDirectory">
-      <div class="connector-directory-label">Tersedia</div>
+      <div class="connector-directory-label" data-i18n="connectors.available">Tersedia</div>
       <div class="connector-list">
         <div class="connector-item" id="connectorItemGithub">
           <div class="connector-item-icon">
@@ -1307,33 +1549,75 @@
           </div>
           <div class="connector-item-body">
             <div class="connector-item-name">GitHub</div>
-            <div class="connector-item-status" id="connectorGithubStatus">Belum terhubung</div>
+            <div class="connector-item-status" id="connectorGithubStatus" data-i18n="connectors.notConnected">Belum terhubung</div>
           </div>
-          <button class="connector-connect-btn" id="connectorGithubConnectBtn" onclick="connectGithub()">Hubungkan</button>
-          <button class="connector-disconnect-btn" id="connectorGithubDisconnectBtn" onclick="disconnectGithub()" style="display:none;">Putuskan</button>
+          <button class="connector-connect-btn" id="connectorGithubConnectBtn" onclick="showSheetPage('githubMethod')" data-i18n="connectors.connect">Hubungkan</button>
+          <button class="connector-disconnect-btn" id="connectorGithubDisconnectBtn" onclick="disconnectGithub()" style="display:none;" data-i18n="connectors.disconnect">Putuskan</button>
         </div>
 
-        <div class="connector-item disabled" title="Segera hadir">
+        <div class="connector-item disabled" title="Segera hadir" data-i18n-title="sheet.comingSoon">
           <div class="connector-item-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 3.5a4.95 4.95 0 0 0-7 7l1 1"/><path d="M9.5 20.5a4.95 4.95 0 0 0 7-7l-1-1"/><line x1="8" y1="16" x2="16" y2="8"/></svg>
           </div>
           <div class="connector-item-body">
             <div class="connector-item-name">Notion</div>
-            <div class="connector-item-status">Segera hadir</div>
+            <div class="connector-item-status" data-i18n="sheet.comingSoon">Segera hadir</div>
           </div>
-          <div class="connector-soon-badge">Segera</div>
+          <div class="connector-soon-badge" data-i18n="connectors.soonBadge">Segera</div>
         </div>
 
-        <div class="connector-item disabled" title="Segera hadir">
+        <div class="connector-item disabled" title="Segera hadir" data-i18n-title="sheet.comingSoon">
           <div class="connector-item-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
           </div>
           <div class="connector-item-body">
             <div class="connector-item-name">Slack</div>
-            <div class="connector-item-status">Segera hadir</div>
+            <div class="connector-item-status" data-i18n="sheet.comingSoon">Segera hadir</div>
           </div>
-          <div class="connector-soon-badge">Segera</div>
+          <div class="connector-soon-badge" data-i18n="connectors.soonBadge">Segera</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Sub-halaman: pilih metode koneksi GitHub (OAuth vs PAT) -->
+    <div class="sheet-page" id="sheetPageGithubMethod">
+      <div class="connector-method-list">
+        <button class="connector-method-card" onclick="connectGithub()">
+          <div class="connector-method-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.1.78-.25.78-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.36-3.88-1.36-.52-1.34-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.43-2.7 5.41-5.27 5.69.41.36.78 1.06.78 2.14 0 1.54-.01 2.79-.01 3.17 0 .3.21.66.79.55A10.52 10.52 0 0 0 23.5 12c0-6.35-5.15-11.5-11.5-11.5z"/></svg>
+          </div>
+          <div class="connector-method-body">
+            <div class="connector-method-name" data-i18n="connectors.oauthTitle">Login dengan GitHub</div>
+            <div class="connector-method-desc" data-i18n="connectors.oauthDesc">Cepat — tinggal setujui izin di GitHub, tanpa perlu buat token manual.</div>
+          </div>
+          <div class="connector-item-chevron">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </button>
+
+        <button class="connector-method-card" onclick="showSheetPage('githubPat')">
+          <div class="connector-method-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div class="connector-method-body">
+            <div class="connector-method-name" data-i18n="connectors.patTitle">Gunakan Personal Access Token</div>
+            <div class="connector-method-desc" data-i18n="connectors.patDesc">Masukkan token GitHub yang kamu buat sendiri secara manual.</div>
+          </div>
+          <div class="connector-item-chevron">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sub-halaman: form input Personal Access Token -->
+    <div class="sheet-page" id="sheetPageGithubPat">
+      <div class="connector-pat-form">
+        <label class="connector-pat-label" for="githubPatInput" data-i18n="connectors.patLabel">Personal Access Token</label>
+        <input type="password" id="githubPatInput" class="connector-pat-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <div class="connector-pat-error" id="githubPatError"></div>
+        <button class="connector-pat-submit" id="githubPatSubmitBtn" onclick="submitGithubPat()" data-i18n="connectors.connect">Hubungkan</button>
+        <a class="connector-pat-help" href="https://github.com/settings/tokens/new?scopes=repo,read:user&description=Farvion" target="_blank" rel="noopener" data-i18n="connectors.patHelp">Cara membuat token →</a>
       </div>
     </div>
 
@@ -1343,6 +1627,232 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script>
+  // ====== I18N: kamus terjemahan & penerapan bahasa ======
+  const TRANSLATIONS = {
+    id: {
+      'brand.sub': 'Asisten AI serba bisa',
+      'sidebar.newChat': 'Percakapan baru',
+      'sidebar.history': 'Riwayat',
+      'sidebar.apiKeyNotSet': 'API key belum diatur',
+      'sidebar.apiKeyReady': 'API key terpasang',
+      'sheet.camera': 'Kamera',
+      'sheet.photo': 'Foto',
+      'sheet.file': 'File',
+      'sheet.webSearch': 'Pencarian web',
+      'sheet.comingSoon': 'Segera hadir',
+      'sheet.connectors': 'Konektor',
+      'sheet.connectorsSub': 'Hubungkan Farvion ke layanan lain',
+      'connectors.emptyText': 'Belum ada konektor. Konektor berfungsi agar Farvion dapat menggunakan aplikasi dan alat Anda.',
+      'connectors.available': 'Tersedia',
+      'connectors.notConnected': 'Belum terhubung',
+      'connectors.connect': 'Hubungkan',
+      'connectors.disconnect': 'Putuskan',
+      'connectors.soonBadge': 'Segera',
+      'connectors.oauthTitle': 'Login dengan GitHub',
+      'connectors.oauthDesc': 'Cepat — tinggal setujui izin di GitHub, tanpa perlu buat token manual.',
+      'connectors.patTitle': 'Gunakan Personal Access Token',
+      'connectors.patDesc': 'Masukkan token GitHub yang kamu buat sendiri secara manual.',
+      'connectors.patLabel': 'Personal Access Token',
+      'connectors.patHelp': 'Cara membuat token →',
+      'connectors.connectedAs': 'Terhubung sebagai',
+      'connectors.connected': 'Terhubung',
+      'connectors.connecting': 'Menghubungkan…',
+      'connectors.checking': 'Memeriksa…',
+      'connectors.tokenEmpty': 'Token tidak boleh kosong.',
+      'connectors.tokenInvalid': 'Token tidak valid atau sudah kedaluwarsa.',
+      'connectors.tokenCheckFailed': 'Gagal memverifikasi token. Coba lagi.',
+      'connectors.networkError': 'Gagal menghubungi GitHub. Periksa koneksi internet kamu.',
+      'connectors.oauthFailed': 'Gagal menghubungkan GitHub. Coba lagi.',
+      'sheetTitle.connectors': 'Konektor',
+      'sheetTitle.directory': 'Jelajahi konektor',
+      'sheetTitle.githubMethod': 'Hubungkan GitHub',
+      'sheetTitle.githubPat': 'Personal Access Token',
+      'composer.placeholder': 'Mengobrol dengan Farvion...',
+      'modal.apiKeyTitle': 'Masukkan API Key Gemini',
+      'modal.apiKeyDesc': 'Farvion butuh API key Gemini kamu sendiri untuk jalan. Key ini <b>hanya disimpan di memori browser selama sesi ini</b> — tidak pernah dikirim ke server manapun kecuali langsung ke Google. Belum punya key? Ambil gratis di <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.',
+      'modal.cancel': 'Batal',
+      'modal.saveStart': 'Simpan & mulai',
+      'login.title': 'Masuk ke Farvion',
+      'login.desc': 'Masuk dengan akun Google kamu untuk mulai mengobrol dengan Farvion, asisten AI kamu untuk semua hal.',
+      'login.googleBtn': 'Masuk dengan Google',
+      'login.connecting': 'Menghubungkan ke Google...',
+      'settings.title': 'Pengaturan',
+      'settings.language': 'Pilih bahasa',
+      'settings.logout': 'Keluar',
+      'newChatTitle': 'Percakapan baru',
+      'composer.placeholderReply': 'Balas Farvion...',
+      'a11y.closeSidebar': 'Tutup sidebar',
+      'a11y.openSidebar': 'Buka sidebar',
+      'a11y.back': 'Kembali',
+      'a11y.close': 'Tutup',
+      'a11y.moreOptions': 'Opsi lainnya',
+      'a11y.discoverConnectors': 'Jelajahi konektor lain',
+      'a11y.takePhoto': 'Ambil foto dengan kamera',
+      'a11y.pickPhoto': 'Pilih foto dari galeri',
+      'a11y.attachFile': 'Lampirkan file teks (.txt/.js/.py, dll)',
+      'a11y.manageConnectors': 'Kelola konektor',
+      'a11y.removeAttachment': 'Hapus lampiran',
+      'errors.loginFailed': 'Gagal masuk',
+      'errors.geminiGeneric': 'Terjadi kesalahan saat menghubungi Gemini API.',
+      'errors.geminiConnectionFailed': 'Gagal terhubung ke Gemini API',
+      'errors.noResponse': 'Maaf, tidak ada respons yang bisa ditampilkan.',
+      'errors.emptyStream': '(stream kosong — tidak ada satu byte pun yang diterima dari server)',
+    },
+    en: {
+      'brand.sub': 'Your everyday AI assistant',
+      'sidebar.newChat': 'New chat',
+      'sidebar.history': 'History',
+      'sidebar.apiKeyNotSet': 'API key not set',
+      'sidebar.apiKeyReady': 'API key connected',
+      'sheet.camera': 'Camera',
+      'sheet.photo': 'Photo',
+      'sheet.file': 'File',
+      'sheet.webSearch': 'Web search',
+      'sheet.comingSoon': 'Coming soon',
+      'sheet.connectors': 'Connectors',
+      'sheet.connectorsSub': 'Connect Farvion to other services',
+      'connectors.emptyText': 'No connectors yet. Connectors let Farvion use your apps and tools.',
+      'connectors.available': 'Available',
+      'connectors.notConnected': 'Not connected',
+      'connectors.connect': 'Connect',
+      'connectors.disconnect': 'Disconnect',
+      'connectors.soonBadge': 'Soon',
+      'connectors.oauthTitle': 'Log in with GitHub',
+      'connectors.oauthDesc': 'Fast — just approve access on GitHub, no manual token needed.',
+      'connectors.patTitle': 'Use a Personal Access Token',
+      'connectors.patDesc': 'Enter a GitHub token you created yourself.',
+      'connectors.patLabel': 'Personal Access Token',
+      'connectors.patHelp': 'How to create a token →',
+      'connectors.connectedAs': 'Connected as',
+      'connectors.connected': 'Connected',
+      'connectors.connecting': 'Connecting…',
+      'connectors.checking': 'Checking…',
+      'connectors.tokenEmpty': 'Token cannot be empty.',
+      'connectors.tokenInvalid': 'Token is invalid or expired.',
+      'connectors.tokenCheckFailed': 'Failed to verify token. Try again.',
+      'connectors.networkError': 'Could not reach GitHub. Check your internet connection.',
+      'connectors.oauthFailed': 'Failed to connect GitHub. Try again.',
+      'sheetTitle.connectors': 'Connectors',
+      'sheetTitle.directory': 'Explore connectors',
+      'sheetTitle.githubMethod': 'Connect GitHub',
+      'sheetTitle.githubPat': 'Personal Access Token',
+      'composer.placeholder': 'Chat with Farvion...',
+      'modal.apiKeyTitle': 'Enter your Gemini API Key',
+      'modal.apiKeyDesc': 'Farvion needs your own Gemini API key to run. This key is <b>only stored in your browser\'s memory for this session</b> — it\'s never sent anywhere except directly to Google. Don\'t have a key? Get one free at <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.',
+      'modal.cancel': 'Cancel',
+      'modal.saveStart': 'Save & start',
+      'login.title': 'Sign in to Farvion',
+      'login.desc': 'Sign in with your Google account to start chatting with Farvion, your AI assistant for everything.',
+      'login.googleBtn': 'Sign in with Google',
+      'login.connecting': 'Connecting to Google...',
+      'settings.title': 'Settings',
+      'settings.language': 'Select language',
+      'settings.logout': 'Logout',
+      'newChatTitle': 'New chat',
+      'composer.placeholderReply': 'Reply to Farvion...',
+      'a11y.closeSidebar': 'Close sidebar',
+      'a11y.openSidebar': 'Open sidebar',
+      'a11y.back': 'Back',
+      'a11y.close': 'Close',
+      'a11y.moreOptions': 'More options',
+      'a11y.discoverConnectors': 'Explore other connectors',
+      'a11y.takePhoto': 'Take a photo with the camera',
+      'a11y.pickPhoto': 'Choose a photo from gallery',
+      'a11y.attachFile': 'Attach a text file (.txt/.js/.py, etc.)',
+      'a11y.manageConnectors': 'Manage connectors',
+      'a11y.removeAttachment': 'Remove attachment',
+      'errors.loginFailed': 'Sign-in failed',
+      'errors.geminiGeneric': 'An error occurred while contacting the Gemini API.',
+      'errors.geminiConnectionFailed': 'Failed to connect to the Gemini API',
+      'errors.noResponse': 'Sorry, there\'s no response to show.',
+      'errors.emptyStream': '(empty stream — not a single byte was received from the server)',
+    }
+  };
+
+  const LANGUAGE_KEY = 'farvion_language';
+
+  function detectInitialLanguage(){
+    const saved = localStorage.getItem(LANGUAGE_KEY);
+    if(saved === 'id' || saved === 'en') return saved;
+    // Deteksi dari bahasa browser/Chrome; default ke Indonesia kalau bukan English
+    const browserLang = (navigator.language || navigator.userLanguage || '').toLowerCase();
+    return browserLang.startsWith('en') ? 'en' : 'id';
+  }
+
+  let currentLanguage = detectInitialLanguage();
+
+  function t(key){
+    return (TRANSLATIONS[currentLanguage] && TRANSLATIONS[currentLanguage][key]) || TRANSLATIONS.id[key] || key;
+  }
+
+  function applyLanguage(lang){
+    currentLanguage = lang;
+    localStorage.setItem(LANGUAGE_KEY, lang);
+    document.documentElement.setAttribute('lang', lang);
+
+    refreshTexts();
+
+    // Update badge centang di halaman pilih bahasa
+    syncLanguageCheckmarks();
+
+    // Judul sub-halaman bottom sheet yang di-set dinamis lewat JS (bukan data-i18n statis)
+    if(typeof SHEET_PAGES !== 'undefined'){
+      SHEET_PAGES.connectors.title = t('sheetTitle.connectors');
+      SHEET_PAGES.directory.title = t('sheetTitle.directory');
+      SHEET_PAGES.githubMethod.title = t('sheetTitle.githubMethod');
+      SHEET_PAGES.githubPat.title = t('sheetTitle.githubPat');
+      // Refresh judul header kalau sub-halaman terkait sedang aktif
+      if(typeof currentSheetPage !== 'undefined' && document.getElementById('sheetTitle')){
+        document.getElementById('sheetTitle').textContent = (SHEET_PAGES[currentSheetPage] || SHEET_PAGES.main).title;
+      }
+    }
+    // Refresh status konektor (teks "Terhubung sebagai @..." dll ikut berubah bahasa)
+    if(typeof refreshConnectorUI === 'function') refreshConnectorUI();
+  }
+
+  function setLanguage(lang){
+    applyLanguage(lang);
+  }
+
+  function openSettingsPage(){
+    document.getElementById('settingsPage').classList.add('visible');
+    refreshTexts();
+  }
+  function closeSettingsPage(){
+    document.getElementById('settingsPage').classList.remove('visible');
+  }
+  function openLanguagePage(){
+    document.getElementById('languagePage').classList.add('visible');
+    refreshTexts();
+    syncLanguageCheckmarks();
+  }
+  function closeLanguagePage(){
+    document.getElementById('languagePage').classList.remove('visible');
+  }
+  function syncLanguageCheckmarks(){
+    const idOpt = document.getElementById('langOptionId');
+    const enOpt = document.getElementById('langOptionEn');
+    if(idOpt) idOpt.classList.toggle('active', currentLanguage === 'id');
+    if(enOpt) enOpt.classList.toggle('active', currentLanguage === 'en');
+  }
+  function refreshTexts(){
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      el.textContent = t(el.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(el => {
+      el.innerHTML = t(el.getAttribute('data-i18n-html'));
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      el.setAttribute('placeholder', t(el.getAttribute('data-i18n-placeholder')));
+    });
+    document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+      el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria')));
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+      el.setAttribute('title', t(el.getAttribute('data-i18n-title')));
+    });
+  }
+
   // ====== GANTI DENGAN CONFIG FIREBASE PROJECT KAMU SENDIRI ======
   // Ambil dari: Firebase Console > Project Settings > General > Your apps > SDK setup and configuration
   const firebaseConfig = {
@@ -1379,7 +1889,7 @@
     document.getElementById('googleLoginBtn').disabled = false;
     document.getElementById('loginLoading').style.display = 'none';
     document.getElementById('loginError').style.display = 'block';
-    document.getElementById('loginError').textContent = 'Gagal masuk (' + err.code + '): ' + err.message;
+    document.getElementById('loginError').textContent = t('errors.loginFailed') + ' (' + err.code + '): ' + err.message;
   }
 
   function signOutUser(){
@@ -1516,7 +2026,7 @@
         return `
           <div class="attach-image-card" data-id="${att.id}">
             <img src="${att.dataUrl}" alt="${escapeHtml(att.name)}">
-            <button class="attach-image-card-remove" onclick="removeAttachment('${att.id}')" aria-label="Hapus lampiran">${closeIconSvg()}</button>
+            <button class="attach-image-card-remove" onclick="removeAttachment('${att.id}')" aria-label="${t('a11y.removeAttachment')}">${closeIconSvg()}</button>
           </div>
         `;
       }
@@ -1524,7 +2034,7 @@
         <div class="attach-file-card" data-id="${att.id}">
           <div class="attach-file-card-top">
             <div class="attach-file-card-badge">${fileExtBadge(att.name)}</div>
-            <button class="attach-file-card-remove" onclick="removeAttachment('${att.id}')" aria-label="Hapus lampiran">${closeIconSvg()}</button>
+            <button class="attach-file-card-remove" onclick="removeAttachment('${att.id}')" aria-label="${t('a11y.removeAttachment')}">${closeIconSvg()}</button>
           </div>
           <div class="attach-file-card-name">${escapeHtml(att.name)}</div>
         </div>
@@ -1555,7 +2065,8 @@
     apiKey = val;
     localStorage.setItem('farvion_gemini_api_key', apiKey);
     document.getElementById('statusDot').className = 'dot on';
-    document.getElementById('statusText').textContent = 'API key aktif';
+    document.getElementById('statusText').textContent = t('sidebar.apiKeyReady');
+    document.getElementById('statusText').removeAttribute('data-i18n');
     document.getElementById('sendBtn').disabled = false;
     closeKeyModal();
   }
@@ -1635,12 +2146,16 @@
   const SHEET_PAGE_IDS = {
     main: 'sheetPageMain',
     connectors: 'sheetPageConnectors',
-    directory: 'sheetPageDirectory'
+    directory: 'sheetPageDirectory',
+    githubMethod: 'sheetPageGithubMethod',
+    githubPat: 'sheetPageGithubPat'
   };
   const SHEET_PAGES = {
     main: { title: '', showBack: false, showDiscover: false, backTarget: 'main' },
     connectors: { title: 'Konektor', showBack: true, showDiscover: true, backTarget: 'main' },
-    directory: { title: 'Jelajahi konektor', showBack: true, showDiscover: false, backTarget: 'connectors' }
+    directory: { title: 'Jelajahi konektor', showBack: true, showDiscover: false, backTarget: 'connectors' },
+    githubMethod: { title: 'Hubungkan GitHub', showBack: true, showDiscover: false, backTarget: 'directory' },
+    githubPat: { title: 'Personal Access Token', showBack: true, showDiscover: false, backTarget: 'githubMethod' }
   };
   let currentSheetPage = 'main';
 
@@ -1700,12 +2215,12 @@
     const disconnectBtnDir = document.getElementById('connectorGithubDisconnectBtn');
 
     if(isConnected){
-      statusEl.textContent = username ? `Terhubung sebagai @${username}` : 'Terhubung';
+      statusEl.textContent = username ? `${t('connectors.connectedAs')} @${username}` : t('connectors.connected');
       statusEl.classList.add('connected');
       connectBtn.style.display = 'none';
       disconnectBtnDir.style.display = 'inline-flex';
     } else {
-      statusEl.textContent = 'Belum terhubung';
+      statusEl.textContent = t('connectors.notConnected');
       statusEl.classList.remove('connected');
       connectBtn.style.display = 'inline-flex';
       disconnectBtnDir.style.display = 'none';
@@ -1717,24 +2232,25 @@
     const entrySub = document.getElementById('connectorEntrySub');
 
     if(isConnected){
+      const statusText = username ? `${t('connectors.connectedAs')} @${username}` : t('connectors.connected');
       connectedList.innerHTML = `
         <div class="connector-item">
           <div class="connector-item-icon">${githubConnectorSvg()}</div>
           <div class="connector-item-body">
             <div class="connector-item-name">GitHub</div>
-            <div class="connector-item-status connected">${username ? `Terhubung sebagai @${username}` : 'Terhubung'}</div>
+            <div class="connector-item-status connected">${statusText}</div>
           </div>
-          <button class="connector-disconnect-btn" onclick="disconnectGithub()">Putuskan</button>
+          <button class="connector-disconnect-btn" onclick="disconnectGithub()">${t('connectors.disconnect')}</button>
         </div>
       `;
       connectedList.style.display = 'flex';
       emptyState.style.display = 'none';
-      entrySub.textContent = 'GitHub terhubung';
+      entrySub.textContent = username ? `GitHub · @${username}` : t('connectors.connected');
     } else {
       connectedList.innerHTML = '';
       connectedList.style.display = 'none';
       emptyState.style.display = 'flex';
-      entrySub.textContent = 'Hubungkan Farvion ke layanan lain';
+      entrySub.textContent = t('sheet.connectorsSub');
     }
   }
 
@@ -1753,6 +2269,53 @@
     refreshConnectorUI();
   }
 
+  // Validasi Personal Access Token langsung ke GitHub API sebelum disimpan,
+  // supaya user langsung tahu kalau tokennya salah/expired/kurang scope.
+  async function submitGithubPat(){
+    const input = document.getElementById('githubPatInput');
+    const errorEl = document.getElementById('githubPatError');
+    const submitBtn = document.getElementById('githubPatSubmitBtn');
+    const token = input.value.trim();
+
+    errorEl.textContent = '';
+
+    if(!token){
+      errorEl.textContent = t('connectors.tokenEmpty');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = t('connectors.checking');
+
+    try {
+      const res = await fetch('https://api.github.com/user', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.github+json',
+        },
+      });
+
+      if(!res.ok){
+        errorEl.textContent = res.status === 401
+          ? t('connectors.tokenInvalid')
+          : t('connectors.tokenCheckFailed');
+        return;
+      }
+
+      const userData = await res.json();
+      localStorage.setItem(GITHUB_TOKEN_KEY, token);
+      localStorage.setItem(GITHUB_USER_KEY, userData.login);
+      input.value = '';
+      refreshConnectorUI();
+      showSheetPage('connectors');
+    } catch(err){
+      errorEl.textContent = t('connectors.networkError');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = t('connectors.connect');
+    }
+  }
+
   // Dipanggil sekali saat halaman dimuat: kalau URL mengandung ?code=... berarti
   // kita baru saja diarahkan balik oleh GitHub setelah user menyetujui otorisasi.
   // Ambil code itu, kirim ke Cloudflare Worker untuk ditukar jadi access_token.
@@ -1766,7 +2329,7 @@
 
     const connectBtn = document.getElementById('connectorGithubConnectBtn');
     if(connectBtn){
-      connectBtn.textContent = 'Menghubungkan…';
+      connectBtn.textContent = t('connectors.connecting');
       connectBtn.disabled = true;
     }
 
@@ -1779,7 +2342,7 @@
       const data = await res.json();
 
       if(data.error){
-        alert('Gagal menghubungkan GitHub: ' + data.error);
+        alert(t('connectors.oauthFailed') + ' (' + data.error + ')');
         return;
       }
 
@@ -1791,10 +2354,10 @@
       openAttachSheet();
       showSheetPage('connectors');
     } catch(err){
-      alert('Gagal menghubungkan GitHub. Coba lagi.');
+      alert(t('connectors.oauthFailed'));
     } finally {
       if(connectBtn){
-        connectBtn.textContent = 'Hubungkan';
+        connectBtn.textContent = t('connectors.connect');
         connectBtn.disabled = false;
       }
     }
@@ -1950,7 +2513,7 @@
   function updatePlaceholder(){
     const input = document.getElementById('userInput');
     const hasMessages = currentConvId && conversations[currentConvId].messages.length > 0;
-    input.placeholder = hasMessages ? 'Balas Farvion...' : 'Mengobrol dengan Farvion...';
+    input.placeholder = hasMessages ? t('composer.placeholderReply') : t('composer.placeholder');
   }
 
   function newChat(){
@@ -1962,7 +2525,7 @@
     }
     convCounter++;
     const id = 'c' + convCounter;
-    conversations[id] = { title: 'Percakapan baru', messages: [] };
+    conversations[id] = { title: t('newChatTitle'), messages: [] };
     currentConvId = id;
     renderHistory();
     renderChat();
@@ -2062,7 +2625,7 @@
 
     const conv = conversations[currentConvId];
     if(conv.messages.length === 0){
-      conv.title = (text || attachments[0]?.name || 'Percakapan baru');
+      conv.title = (text || attachments[0]?.name || t('newChatTitle'));
       conv.title = conv.title.length > 32 ? conv.title.slice(0,32) + '…' : conv.title;
     }
 
@@ -2080,7 +2643,7 @@
     document.getElementById('sendBtn').disabled = true;
 
     try{
-      const systemPrompt = "Kamu adalah Farvion, asisten AI serba bisa — siap membantu apa saja, mulai dari ngobrol santai, menulis dan menyunting teks, riset dan menjelaskan konsep, brainstorming ide, analisis data, sampai coding dan debugging di berbagai bahasa pemrograman. Sesuaikan gaya jawabanmu dengan konteks pertanyaan: santai kalau ngobrol biasa, terstruktur dan detail kalau diminta analisis mendalam, ringkas kalau user cuma butuh jawaban cepat. Jawab dengan jelas dan jujur, akui kalau tidak tahu sesuatu, dan gunakan format markdown (termasuk code block ```) bila membantu keterbacaan, terutama untuk kode. PENTING: jangan memperkenalkan diri sebagai 'Farvion' atau menyebut namamu sendiri di setiap jawaban — cukup jawab langsung sesuai apa yang ditanyakan/diminta user. Perkenalkan dirimu HANYA kalau user secara eksplisit bertanya siapa kamu/nama kamu (misal 'siapa kamu', 'nama kamu siapa', 'kamu siapa'). Untuk sapaan biasa seperti 'halo', 'hai', 'hi', 'pagi', 'malam' — balas sapaan itu dengan singkat dan hangat TANPA menyebut namamu sendiri sama sekali, dan tanyakan ada yang bisa dibantu. Jangan pernah menyisipkan 'Aku Farvion' atau perkenalan diri di jawaban mana pun kecuali benar-benar ditanya namamu secara langsung. Kamu dibuat/diciptakan oleh Pinzz (seorang developer independen). Sebutkan fakta ini HANYA kalau user secara eksplisit bertanya soal penciptamu/siapa yang membuatmu/developer di baliknya (misal 'siapa yang bikin kamu', 'siapa penciptamu', 'kamu dibuat siapa') — jangan pernah menyebut nama Pinzz di jawaban lain, termasuk saat sekadar disapa atau memperkenalkan diri.";
+      const systemPrompt = "Kamu adalah Farvion, asisten AI serba bisa — siap membantu apa saja, mulai dari ngobrol santai, menulis dan menyunting teks, riset dan menjelaskan konsep, brainstorming ide, analisis data, sampai coding dan debugging di berbagai bahasa pemrograman. Sesuaikan gaya jawabanmu dengan konteks pertanyaan: santai kalau ngobrol biasa, terstruktur dan detail kalau diminta analisis mendalam, ringkas kalau user cuma butuh jawaban cepat. Jawab dengan jelas dan jujur, akui kalau tidak tahu sesuatu, dan gunakan format markdown (termasuk code block ```) bila membantu keterbacaan, terutama untuk kode. PENTING: jangan memperkenalkan diri sebagai 'Farvion' atau menyebut namamu sendiri di setiap jawaban — cukup jawab langsung sesuai apa yang ditanyakan/diminta user. Perkenalkan dirimu HANYA kalau user secara eksplisit bertanya siapa kamu/nama kamu (misal 'siapa kamu', 'nama kamu siapa', 'kamu siapa'). Untuk sapaan biasa seperti 'halo', 'hai', 'hi', 'pagi', 'malam' — balas sapaan itu dengan singkat dan hangat TANPA menyebut namamu sendiri sama sekali, dan tanyakan ada yang bisa dibantu. Jangan pernah menyisipkan 'Aku Farvion' atau perkenalan diri di jawaban mana pun kecuali benar-benar ditanya namamu secara langsung. Kamu dibuat/diciptakan oleh Pinzz (seorang developer independen). Sebutkan fakta ini HANYA kalau user secara eksplisit bertanya soal penciptamu/siapa yang membuatmu/developer di baliknya (misal 'siapa yang bikin kamu', 'siapa penciptamu', 'kamu dibuat siapa') — jangan pernah menyebut nama Pinzz di jawaban lain, termasuk saat sekadar disapa atau memperkenalkan diri. Kalau user bertanya soal model/versi yang sedang dipakai (misal 'kamu pakai model apa', 'model kamu apa', 'kamu versi berapa', 'sekarang kamu berada di model apa'), jawab bahwa kamu menggunakan model 'Farvion Nova 1.0' — JANGAN PERNAH menyebut Gemini, Google, atau nama model/penyedia AI lain dalam bentuk apapun, walau user mendesak atau bertanya berulang kali.";
 
       const nonLoadingMsgs = conv.messages.filter(m => !m.loading);
       const lastMsg = nonLoadingMsgs[nonLoadingMsgs.length - 1]; // pesan user yang baru dikirim
@@ -2109,7 +2672,7 @@
       );
 
       if(!response.ok){
-        let errMsg = 'Terjadi kesalahan saat menghubungi Gemini API.';
+        let errMsg = t('errors.geminiGeneric');
         try{
           const errData = await response.json();
           errMsg = errData?.error?.message || errMsg;
@@ -2186,8 +2749,8 @@
           // supaya bisa dibaca tanpa perlu buka console/DevTools.
           const debugSnippet = rawFullDump.trim()
             ? rawFullDump.slice(0, 1200)
-            : '(stream kosong — tidak ada satu byte pun yang diterima dari server)';
-          aiMsg.text = 'Maaf, tidak ada respons yang bisa ditampilkan.\n\n--- DEBUG RAW RESPONSE ---\n' + debugSnippet;
+            : t('errors.emptyStream');
+          aiMsg.text = t('errors.noResponse') + '\n\n--- DEBUG RAW RESPONSE ---\n' + debugSnippet;
           aiMsg.error = true;
           resetTypingState();
         } else {
@@ -2208,7 +2771,7 @@
           conv.messages.pop();
         }
       }
-      conv.messages.push({ role:'ai', text: 'Gagal terhubung ke Gemini API: ' + err.message, error:true });
+      conv.messages.push({ role:'ai', text: t('errors.geminiConnectionFailed') + ': ' + err.message, error:true });
       renderChat();
     }
 
@@ -2313,6 +2876,7 @@
   newChat();
   document.getElementById('userInput').focus();
   // Tampilan awal (login screen vs app) diatur oleh auth.onAuthStateChanged di atas
+  applyLanguage(currentLanguage);
 
   // Muat API key yang tersimpan di perangkat ini, kalau ada
   (function loadSavedApiKey(){
@@ -2320,7 +2884,8 @@
     if(saved){
       apiKey = saved;
       document.getElementById('statusDot').className = 'dot on';
-      document.getElementById('statusText').textContent = 'API key aktif';
+      document.getElementById('statusText').textContent = t('sidebar.apiKeyReady');
+      document.getElementById('statusText').removeAttribute('data-i18n');
       document.getElementById('sendBtn').disabled = false;
     }
   })();
