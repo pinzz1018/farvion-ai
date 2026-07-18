@@ -38,6 +38,25 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /* Nonaktifkan seleksi/copy teks di seluruh UI secara default (biar gak
+     ada highlight biru saat tap-and-hold), kecuali di dalam bubble pesan
+     (jawaban Farvion AI & pesan/prompt user) dan kolom input teks, yang
+     memang harus tetap bisa di-select & di-copy. */
+  *{
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .msg-bubble, .msg-bubble *,
+  textarea, input[type="text"], input:not([type]),
+  [contenteditable="true"]{
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
+
   #app{
     display:flex;
     height:100vh;
@@ -427,7 +446,9 @@
     font-family:'Inter',sans-serif;
     font-weight:500;
     white-space:nowrap;
+    cursor:pointer;
   }
+  .composer-model-pill:hover{ background: rgba(43,38,32,0.09); }
 
   .send-btn{
     width: 34px; height:34px;
@@ -708,6 +729,36 @@
     display:flex; align-items:center; justify-content:center;
   }
   .sheet-item-chevron svg{ width:18px; height:18px; }
+
+  /* Sheet "Pilih model" */
+  .model-option-list{
+    padding: 4px 12px 18px 12px;
+  }
+  .model-option{
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    padding: 13px 12px;
+    border-radius: 12px;
+    cursor:pointer;
+  }
+  .model-option:hover{ background: rgba(43,38,32,0.05); }
+  .model-option-body{ flex:1; min-width:0; }
+  .model-option-name{
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .model-option-sub{
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+  .model-option-check{
+    color: var(--terracotta-deep);
+    display:flex;
+    flex-shrink:0;
+  }
 
   /* ==== Header sheet: tombol back (sub-halaman) & tombol aksi kanan ==== */
   .sheet-back-btn{
@@ -1380,7 +1431,7 @@
     </div>
     <div class="fullscreen-body">
       <button class="language-option" id="langOptionId" onclick="setLanguage('id')">
-        <div class="language-option-label">Bahasa Indonesia</div>
+        <div class="language-option-label">Indonesia</div>
         <div class="language-option-check">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
         </div>
@@ -1423,7 +1474,7 @@
               <button class="attach-btn" onclick="openAttachSheet()" aria-label="Opsi lainnya" title="Opsi lainnya" data-i18n-aria="a11y.moreOptions" data-i18n-title="a11y.moreOptions">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
               </button>
-              <div class="composer-model-pill">Farvion Nova 1.0</div>
+              <div class="composer-model-pill" onclick="openModelSheet()">Farvion Nova 1.0</div>
             </div>
             <button class="send-btn" id="sendBtn" onclick="sendMessage()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
@@ -1624,6 +1675,35 @@
   </div>
 </div>
 
+<!-- BOTTOM SHEET: Pilih model -->
+<div class="sheet-overlay" id="modelSheetOverlay" onclick="closeModelSheet()"></div>
+<div class="bottom-sheet" id="modelSheet">
+  <div class="sheet-handle-area" id="modelSheetHandleArea">
+    <div class="sheet-handle"></div>
+  </div>
+  <div class="sheet-header">
+    <button class="sheet-close-btn" onclick="closeModelSheet()" aria-label="Tutup" data-i18n-aria="a11y.close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="sheet-title" data-i18n="modelSheet.title">Pilih model</div>
+    <div class="sheet-header-spacer"></div>
+  </div>
+
+  <div class="sheet-scroll" id="modelSheetScroll">
+    <div class="model-option-list">
+      <div class="model-option active" onclick="closeModelSheet()">
+        <div class="model-option-body">
+          <div class="model-option-name">Farvion Nova 1.0</div>
+          <div class="model-option-sub" data-i18n="modelSheet.sub">Cepat & efisien untuk penggunaan sehari-hari</div>
+        </div>
+        <div class="model-option-check">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script>
@@ -1667,6 +1747,8 @@
       'sheetTitle.directory': 'Jelajahi konektor',
       'sheetTitle.githubMethod': 'Hubungkan GitHub',
       'sheetTitle.githubPat': 'Personal Access Token',
+      'modelSheet.title': 'Pilih model',
+      'modelSheet.sub': 'Cepat & efisien untuk penggunaan sehari-hari',
       'composer.placeholder': 'Mengobrol dengan Farvion...',
       'modal.apiKeyTitle': 'Masukkan API Key Gemini',
       'modal.apiKeyDesc': 'Farvion butuh API key Gemini kamu sendiri untuk jalan. Key ini <b>hanya disimpan di memori browser selama sesi ini</b> — tidak pernah dikirim ke server manapun kecuali langsung ke Google. Belum punya key? Ambil gratis di <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.',
@@ -1736,6 +1818,8 @@
       'sheetTitle.directory': 'Explore connectors',
       'sheetTitle.githubMethod': 'Connect GitHub',
       'sheetTitle.githubPat': 'Personal Access Token',
+      'modelSheet.title': 'Select model',
+      'modelSheet.sub': 'Fast & efficient for everyday use',
       'composer.placeholder': 'Chat with Farvion...',
       'modal.apiKeyTitle': 'Enter your Gemini API Key',
       'modal.apiKeyDesc': 'Farvion needs your own Gemini API key to run. This key is <b>only stored in your browser\'s memory for this session</b> — it\'s never sent anywhere except directly to Google. Don\'t have a key? Get one free at <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.',
@@ -1774,9 +1858,15 @@
   function detectInitialLanguage(){
     const saved = localStorage.getItem(LANGUAGE_KEY);
     if(saved === 'id' || saved === 'en') return saved;
-    // Deteksi dari bahasa browser/Chrome; default ke Indonesia kalau bukan English
-    const browserLang = (navigator.language || navigator.userLanguage || '').toLowerCase();
-    return browserLang.startsWith('en') ? 'en' : 'id';
+    // Deteksi dari preferensi bahasa device/browser. navigator.languages (array)
+    // lebih representatif daripada navigator.language tunggal, karena urutannya
+    // mengikuti prioritas bahasa yang di-set user di OS/browser.
+    const langList = (navigator.languages && navigator.languages.length)
+      ? navigator.languages
+      : [navigator.language || navigator.userLanguage || ''];
+    const primary = (langList[0] || '').toLowerCase();
+    // Default ke Indonesia kalau bahasa utama device bukan English.
+    return primary.startsWith('en') ? 'en' : 'id';
   }
 
   let currentLanguage = detectInitialLanguage();
@@ -1936,9 +2026,9 @@
   let pendingAttachments = []; // {id, kind:'image'|'file', name, mimeType, dataUrl?, base64?, text?}
   let attachCounter = 0;
 
-  function triggerCamera(){ closeAttachSheet(); setTimeout(() => { document.getElementById('cameraInput').value=''; document.getElementById('cameraInput').click(); }, 300); }
-  function triggerPhoto(){ closeAttachSheet(); setTimeout(() => { document.getElementById('photoInput').value=''; document.getElementById('photoInput').click(); }, 300); }
-  function triggerFile(){ closeAttachSheet(); setTimeout(() => { document.getElementById('fileInput').value=''; document.getElementById('fileInput').click(); }, 300); }
+  function triggerCamera(){ closeAttachSheet(); setTimeout(() => { document.getElementById('cameraInput').value=''; document.getElementById('cameraInput').click(); }, 340); }
+  function triggerPhoto(){ closeAttachSheet(); setTimeout(() => { document.getElementById('photoInput').value=''; document.getElementById('photoInput').click(); }, 340); }
+  function triggerFile(){ closeAttachSheet(); setTimeout(() => { document.getElementById('fileInput').value=''; document.getElementById('fileInput').click(); }, 340); }
 
   const TEXT_EXT_FALLBACK = /\.(txt|js|jsx|ts|tsx|py|json|md|css|html|htm|csv|xml|yaml|yml|c|cpp|h|java|go|rs|rb|php|sh|sql|log)$/i;
 
@@ -2111,7 +2201,13 @@
       sheetOverlay.classList.remove('visible');
       // baru benar-benar sembunyikan setelah animasi selesai, biar transisinya mulus
       setTimeout(() => {
-        if(sheetState === 'closed') attachSheet.classList.remove('visible');
+        if(sheetState === 'closed'){
+          attachSheet.classList.remove('visible');
+          // Paksa sheet & transform-nya benar-benar netral, supaya kalau ada
+          // native picker (kamera/galeri/file) yang tampil di atasnya lalu
+          // ditutup, WebView tidak "nyangkut" menampilkan sisa sheet.
+          setSheetTransform(sheetHeightPx(SHEET_FULL_VH), false);
+        }
       }, animated ? 320 : 0);
     } else if(state === 'half'){
       attachSheet.classList.add('visible');
@@ -2455,6 +2551,133 @@
     document.addEventListener('mouseup', onUp);
   });
 
+  // ====== BOTTOM SHEET: Pilih model ======
+  // Sheet terpisah dari attachSheet, tapi pakai class .bottom-sheet/.sheet-overlay
+  // yang sama, dan drag/snap dengan perilaku identik (half/full/closed).
+  const modelSheet = document.getElementById('modelSheet');
+  const modelSheetOverlay = document.getElementById('modelSheetOverlay');
+  const modelSheetHandleArea = document.getElementById('modelSheetHandleArea');
+  const modelSheetScrollEl = document.getElementById('modelSheetScroll');
+
+  let modelSheetState = 'closed'; // 'closed' | 'half' | 'full'
+
+  function setModelSheetTransform(px, animated){
+    modelSheet.style.transition = animated ? '' : 'none';
+    modelSheet.style.transform = `translateY(${px}px)`;
+  }
+
+  function applyModelSheetState(state, animated = true){
+    modelSheetState = state;
+    if(state === 'closed'){
+      setModelSheetTransform(sheetHeightPx(SHEET_FULL_VH), animated);
+      modelSheetOverlay.classList.remove('visible');
+      setTimeout(() => {
+        if(modelSheetState === 'closed'){
+          modelSheet.classList.remove('visible');
+          setModelSheetTransform(sheetHeightPx(SHEET_FULL_VH), false);
+        }
+      }, animated ? 320 : 0);
+    } else if(state === 'half'){
+      modelSheet.classList.add('visible');
+      modelSheetOverlay.classList.add('visible');
+      setModelSheetTransform(translateForVisibleVh(SHEET_HALF_VH), animated);
+    } else if(state === 'full'){
+      modelSheet.classList.add('visible');
+      modelSheetOverlay.classList.add('visible');
+      setModelSheetTransform(translateForVisibleVh(SHEET_FULL_VH), animated);
+    }
+  }
+
+  function openModelSheet(){
+    modelSheet.classList.add('visible');
+    modelSheetOverlay.classList.add('visible');
+    setModelSheetTransform(sheetHeightPx(SHEET_FULL_VH), false);
+    modelSheet.offsetHeight; // force reflow biar transisi berikutnya kepakai
+    requestAnimationFrame(() => applyModelSheetState('half', true));
+  }
+  function closeModelSheet(){
+    applyModelSheetState('closed', true);
+  }
+
+  // Drag: logika sama persis seperti attachSheet, tapi state-nya independen
+  let modelSheetDragStartY = 0;
+  let modelSheetDragBaseTranslate = 0;
+  let modelSheetCurrentTranslate = 0;
+  let modelSheetDragging = false;
+  let modelSheetDragEnabled = false;
+
+  function modelSheetDragStart(clientY, fromHandle){
+    if(!fromHandle && modelSheetScrollEl && modelSheetScrollEl.scrollTop > 0){
+      modelSheetDragEnabled = false;
+      return;
+    }
+    modelSheetDragEnabled = true;
+    modelSheetDragStartY = clientY;
+    const currentTransform = modelSheet.style.transform;
+    const match = /translateY\(([-\d.]+)px\)/.exec(currentTransform);
+    modelSheetDragBaseTranslate = match ? parseFloat(match[1]) : translateForVisibleVh(SHEET_HALF_VH);
+    modelSheetCurrentTranslate = modelSheetDragBaseTranslate;
+    modelSheetDragging = true;
+    modelSheet.classList.add('dragging');
+  }
+  function modelSheetDragMove(clientY){
+    if(!modelSheetDragging || !modelSheetDragEnabled) return;
+    const delta = clientY - modelSheetDragStartY;
+    const minTranslate = 0;
+    const maxTranslate = sheetHeightPx(SHEET_FULL_VH);
+    modelSheetCurrentTranslate = Math.min(maxTranslate, Math.max(minTranslate, modelSheetDragBaseTranslate + delta));
+    setModelSheetTransform(modelSheetCurrentTranslate, false);
+  }
+  function modelSheetDragEnd(){
+    if(!modelSheetDragging) return;
+    modelSheetDragging = false;
+    modelSheet.classList.remove('dragging');
+    if(!modelSheetDragEnabled) return;
+
+    const fullPx = sheetHeightPx(SHEET_FULL_VH);
+    const visiblePx = fullPx - modelSheetCurrentTranslate;
+    const visiblePercentOfFull = (visiblePx / fullPx) * 100;
+
+    if(visiblePercentOfFull >= 75){
+      applyModelSheetState('full', true);
+    } else if(visiblePercentOfFull >= 25){
+      applyModelSheetState('half', true);
+    } else {
+      applyModelSheetState('closed', true);
+    }
+  }
+
+  modelSheetHandleArea.addEventListener('touchstart', e => modelSheetDragStart(e.touches[0].clientY, true), { passive: true });
+  modelSheetHandleArea.addEventListener('touchmove', e => modelSheetDragMove(e.touches[0].clientY), { passive: true });
+  modelSheetHandleArea.addEventListener('touchend', modelSheetDragEnd);
+  modelSheetHandleArea.addEventListener('mousedown', e => {
+    modelSheetDragStart(e.clientY, true);
+    const onMove = ev => modelSheetDragMove(ev.clientY);
+    const onUp = () => {
+      modelSheetDragEnd();
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  modelSheet.addEventListener('touchstart', e => modelSheetDragStart(e.touches[0].clientY, false), { passive: true });
+  modelSheet.addEventListener('touchmove', e => modelSheetDragMove(e.touches[0].clientY), { passive: true });
+  modelSheet.addEventListener('touchend', modelSheetDragEnd);
+  modelSheet.addEventListener('mousedown', e => {
+    if(e.target.closest('.sheet-close-btn') || e.target.closest('.model-option')) return;
+    modelSheetDragStart(e.clientY, false);
+    const onMove = ev => modelSheetDragMove(ev.clientY);
+    const onUp = () => {
+      modelSheetDragEnd();
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
   // Sapaan berdasar waktu lokal perangkat, diterjemahkan sesuai bahasa browser user.
   // Fallback ke Inggris kalau bahasa browser tidak ada di daftar.
   const GREETING_TRANSLATIONS = {
@@ -2477,6 +2700,13 @@
     th: ['สวัสดีตอนเช้า', 'สวัสดีตอนบ่าย', 'สวัสดีตอนเย็น', 'ราตรีสวัสดิ์'],
     ms: ['Selamat pagi', 'Selamat tengah hari', 'Selamat petang', 'Selamat malam']
   };
+
+  // Terapkan bahasa di sini — titik teraman yang paling awal: semua const/function
+  // yang dibutuhkan applyLanguage (SHEET_PAGES, GREETING_TRANSLATIONS, refreshConnectorUI,
+  // dll) sudah selesai dideklarasikan di atas, jadi tidak kena TDZ ReferenceError,
+  // tapi tetap jauh lebih awal daripada di ujung file supaya tidak ada kilatan teks
+  // fallback Bahasa Indonesia sebelum bahasa asli device/pilihan tersimpan diterapkan.
+  applyLanguage(currentLanguage);
 
   function getGreetingWord(){
     const hour = new Date().getHours();
@@ -2876,7 +3106,8 @@
   newChat();
   document.getElementById('userInput').focus();
   // Tampilan awal (login screen vs app) diatur oleh auth.onAuthStateChanged di atas
-  applyLanguage(currentLanguage);
+  // (applyLanguage sudah dipanggil lebih awal, sesaat setelah TRANSLATIONS didefinisikan,
+  // supaya tidak ada kilatan teks default Bahasa Indonesia sebelum bahasa asli diterapkan)
 
   // Muat API key yang tersimpan di perangkat ini, kalau ada
   (function loadSavedApiKey(){
