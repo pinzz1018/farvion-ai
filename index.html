@@ -2596,7 +2596,30 @@
     // UI macet permanen di teks loading. Redirect jauh lebih reliable untuk
     // mobile, jadi langsung pakai itu tanpa mencoba popup dulu.
     if(isMobileBrowser()){
-      auth.signInWithRedirect(googleProvider).catch(showAuthError);
+      // Watchdog: kalau dalam 6 detik browser belum benar-benar berpindah
+      // halaman (redirect ke Google), kemungkinan besar signInWithRedirect
+      // gagal secara diam-diam (tanpa promise reject maupun throw) — biasanya
+      // karena Chrome memblokir storage/cookie lintas domain yang dibutuhkan
+      // Firebase Auth. Tampilkan pesan yang jelas alih-alih macet selamanya.
+      const redirectWatchdog = setTimeout(() => {
+        showAuthError({
+          code: 'auth/redirect-did-not-start',
+          message: 'Google sign-in tidak merespons. Kemungkinan browser memblokir penyimpanan lintas domain yang dibutuhkan Firebase. Coba nonaktifkan mode "Block third-party cookies" di pengaturan Chrome, atau coba browser lain.'
+        });
+      }, 6000);
+
+      try {
+        auth.signInWithRedirect(googleProvider).catch(err => {
+          clearTimeout(redirectWatchdog);
+          showAuthError(err);
+        });
+      } catch(syncErr){
+        // Tangkap juga error yang dilempar secara synchronous (bukan lewat
+        // promise rejection) — ini bisa terjadi kalau browser memblokir
+        // storage/cookie lintas domain yang dibutuhkan Firebase Auth.
+        clearTimeout(redirectWatchdog);
+        showAuthError(syncErr);
+      }
       return;
     }
 
@@ -2616,7 +2639,9 @@
     document.getElementById('googleLoginBtn').disabled = false;
     document.getElementById('loginLoading').style.display = 'none';
     document.getElementById('loginError').style.display = 'block';
-    document.getElementById('loginError').textContent = t('errors.loginFailed') + ' (' + err.code + '): ' + err.message;
+    const code = err && err.code ? err.code : '(tanpa kode)';
+    const message = err && err.message ? err.message : String(err);
+    document.getElementById('loginError').textContent = t('errors.loginFailed') + ' (' + code + '): ' + message;
   }
 
   function signOutUser(){
