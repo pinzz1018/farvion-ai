@@ -2716,11 +2716,21 @@
         isApplyingRemoteSnapshot = true;
         snapshot.docChanges().forEach(change => {
           const id = change.doc.id;
+          // Lewati echo dari write kita sendiri (data lokal sudah jadi sumber kebenaran
+          // untuk perubahan yang baru saja kita kirim). Ini mencegah balasan AI yang baru
+          // saja selesai ditimpa balik oleh data lama dari server saat snapshot echo tiba.
+          if(change.doc.metadata.hasPendingWrites) return;
           if(change.type === 'removed'){
             delete conversations[id];
             if(currentConvId === id) currentConvId = null;
           } else {
             const data = change.doc.data();
+            // Jangan timpa percakapan yang sedang aktif kalau ada pesan yang masih
+            // loading/streaming secara lokal — itu tandanya kita sedang di tengah
+            // menerima jawaban AI dan versi lokal lebih baru daripada versi server.
+            const local = conversations[id];
+            const localIsBusy = local && local.messages.some(m => m.loading || m.streaming);
+            if(localIsBusy) return;
             conversations[id] = {
               title: data.title || t('newChatTitle'),
               messages: data.messages || [],
@@ -2728,16 +2738,10 @@
             };
           }
         });
-        // Kalau belum ada convo aktif dan ada riwayat, tampilkan yang paling baru diupdate
-        if(!currentConvId){
-          const ids = Object.keys(conversations);
-          if(ids.length > 0){
-            ids.sort((a,b) => (conversations[b].updatedAt||0) - (conversations[a].updatedAt||0));
-            currentConvId = ids[0];
-          }
-        }
         renderHistory();
-        renderChat();
+        // Render ulang chat aktif hanya kalau datanya memang berubah dari cloud;
+        // tidak lagi auto-memilih percakapan lain — biarkan user selalu mulai di New Chat.
+        if(currentConvId && conversations[currentConvId]) renderChat();
         isApplyingRemoteSnapshot = false;
       }, err => {
         console.error('[Farvion] Gagal sinkronisasi riwayat chat dari Firestore:', err);
@@ -2756,6 +2760,12 @@
   function scheduleSaveConversation(convId){
     if(isApplyingRemoteSnapshot) return; // perubahan ini datang dari cloud, jangan ditulis balik
     if(!currentUser || !convId || !conversations[convId]) return;
+    // Jangan simpan selagi ada pesan yang masih loading/streaming — nanti kalau reload
+    // di tengah proses ini, pesan itu akan macet di Firestore dalam status "loading"
+    // selamanya. Simpan hanya setelah balasan benar-benar selesai (atau untuk pesan user).
+    const conv = conversations[convId];
+    const isBusy = conv.messages.some(m => m.loading || m.streaming);
+    if(isBusy) return;
     PENDING_SAVE_IDS.add(convId);
     if(saveDebounceTimer) clearTimeout(saveDebounceTimer);
     saveDebounceTimer = setTimeout(flushPendingSaves, 600);
