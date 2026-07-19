@@ -2581,12 +2581,27 @@
 
   let currentUser = null;
 
+  function isMobileBrowser(){
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+
   function signInWithGoogle(){
     document.getElementById('googleLoginBtn').disabled = true;
     document.getElementById('loginLoading').style.display = 'block';
     document.getElementById('loginError').style.display = 'none';
-    // Coba popup dulu (lebih cepat & error lebih jelas di browser biasa).
-    // Kalau gagal karena diblokir/tidak didukung, baru fallback ke redirect.
+
+    // Di browser mobile (terutama Chrome Android), signInWithPopup sering
+    // "hang" diam-diam — popup-nya kebuka tapi promise-nya tidak pernah
+    // resolve ATAU reject, jadi .catch() di bawah pun tidak pernah jalan dan
+    // UI macet permanen di teks loading. Redirect jauh lebih reliable untuk
+    // mobile, jadi langsung pakai itu tanpa mencoba popup dulu.
+    if(isMobileBrowser()){
+      auth.signInWithRedirect(googleProvider).catch(showAuthError);
+      return;
+    }
+
+    // Di desktop, popup lebih cepat & tetap dipakai sebagai jalur utama,
+    // dengan fallback ke redirect kalau memang diblokir/tidak didukung.
     auth.signInWithPopup(googleProvider)
       .catch(err => {
         if(err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment' || err.code === 'auth/popup-closed-by-user'){
