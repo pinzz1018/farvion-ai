@@ -4702,7 +4702,13 @@
       // tetap dicatat ke console untuk keperluan debugging developer.
       console.error('[Farvion] streamGeminiReply gagal setelah retry:', lastFailure);
       conv.messages.pop(); // remove loading placeholder
-      conv.messages.push({ role:'ai', text: t('errors.geminiGeneric'), error:true });
+      // DEBUG SEMENTARA: tampilkan detail teknis di chat supaya bisa dibaca
+      // langsung dari HP tanpa perlu buka console. Akan dikembalikan ke pesan
+      // ramah biasa setelah penyebab errornya ditemukan.
+      let debugDetail = 'unknown';
+      if(lastFailure?.status) debugDetail = 'HTTP status: ' + lastFailure.status;
+      else if(lastFailure?.err) debugDetail = (lastFailure.err.name || 'Error') + ': ' + (lastFailure.err.message || String(lastFailure.err));
+      conv.messages.push({ role:'ai', text: t('errors.geminiGeneric') + '\n\n[DEBUG: ' + debugDetail + ']', error:true });
       renderChat();
       return;
     }
