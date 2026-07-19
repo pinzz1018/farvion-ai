@@ -2251,6 +2251,7 @@
 </div>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script>
   // ====== I18N: kamus terjemahan & penerapan bahasa ======
   const TRANSLATIONS = {
@@ -2329,7 +2330,7 @@
       'composer.placeholder': 'Mengobrol dengan Farvion...',
       'toast.copied': 'Disalin',
       'modal.apiKeyTitle': 'Masukkan API Key Gemini',
-      'modal.apiKeyDesc': 'Farvion butuh API key Gemini kamu sendiri untuk jalan. Key ini <b>hanya disimpan di memori browser selama sesi ini</b> — tidak pernah dikirim ke server manapun kecuali langsung ke Google. Belum punya key? Ambil gratis di <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.',
+      'modal.apiKeyDesc': 'Farvion butuh API key Gemini kamu sendiri untuk jalan. Key ini <b>disimpan di penyimpanan lokal browser kamu (localStorage)</b> sehingga tidak perlu dimasukkan ulang tiap buka halaman — dan tidak pernah dikirim ke server manapun kecuali langsung ke Google. Belum punya key? Ambil gratis di <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.',
       'modal.cancel': 'Batal',
       'modal.saveStart': 'Simpan & mulai',
       'modal.githubPushTitle': 'Konfirmasi push ke GitHub',
@@ -2357,6 +2358,7 @@
       'a11y.removeAttachment': 'Hapus lampiran',
       'errors.loginFailed': 'Gagal masuk',
       'errors.geminiGeneric': 'Lagi ada gangguan koneksi ke AI nih, coba kirim ulang pesannya ya.',
+      'errors.apiKeyStorageFailed': 'Gagal menyimpan API key ke penyimpanan lokal browser. Kemungkinan kamu sedang di mode Incognito/Private, atau pengaturan browser memblokir penyimpanan data situs. API key masih bisa dipakai untuk sesi ini, tapi akan hilang saat kamu keluar/refresh.',
       'errors.geminiConnectionFailed': 'Lagi susah connect ke server AI. Coba beberapa saat lagi ya.',
       'errors.noResponse': 'Hmm, aku belum dapat jawaban yang jelas. Coba tanya ulang dengan kata lain ya?',
       'errors.emptyStream': 'Lagi ada gangguan koneksi ke AI nih, coba kirim ulang pesannya ya.',
@@ -2436,7 +2438,7 @@
       'composer.placeholder': 'Chat with Farvion...',
       'toast.copied': 'Copied',
       'modal.apiKeyTitle': 'Enter your Gemini API Key',
-      'modal.apiKeyDesc': 'Farvion needs your own Gemini API key to run. This key is <b>only stored in your browser\'s memory for this session</b> — it\'s never sent anywhere except directly to Google. Don\'t have a key? Get one free at <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.',
+      'modal.apiKeyDesc': 'Farvion needs your own Gemini API key to run. This key is <b>saved in your browser\'s local storage</b> so you won\'t need to re-enter it next time — it\'s never sent anywhere except directly to Google. Don\'t have a key? Get one free at <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.',
       'modal.cancel': 'Cancel',
       'modal.saveStart': 'Save & start',
       'modal.githubPushTitle': 'Confirm push to GitHub',
@@ -2464,6 +2466,7 @@
       'a11y.removeAttachment': 'Remove attachment',
       'errors.loginFailed': 'Sign-in failed',
       'errors.geminiGeneric': 'Having trouble connecting to the AI right now — try sending your message again.',
+      'errors.apiKeyStorageFailed': 'Failed to save the API key to your browser\'s local storage. You might be in Incognito/Private mode, or your browser is blocking site data storage. The key will still work for this session, but will be lost when you close or refresh the page.',
       'errors.geminiConnectionFailed': 'Having trouble reaching the AI server. Please try again shortly.',
       'errors.noResponse': 'Hmm, I didn\'t get a clear answer. Could you try asking that a different way?',
       'errors.emptyStream': 'Having trouble connecting to the AI right now — try sending your message again.',
@@ -2578,6 +2581,7 @@
   };
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
+  const db = firebase.firestore();
   const googleProvider = new firebase.auth.GoogleAuthProvider();
 
   let currentUser = null;
@@ -2675,9 +2679,15 @@
       document.getElementById('userChipName').textContent = user.displayName || user.email || '';
       showApp();
       updateGreeting();
+      loadConversationsFromCloud(user.uid);
     } else {
       currentUser = null;
       userName = '';
+      stopConversationsSync();
+      conversations = {};
+      currentConvId = null;
+      renderHistory();
+      renderChat();
       showLoginScreen();
     }
   });
@@ -2686,6 +2696,107 @@
   let conversations = {}; // id -> {title, messages: [{role, text}]}
   let currentConvId = null;
   let convCounter = 0;
+
+  // ====== SINKRONISASI RIWAYAT CHAT KE FIRESTORE ======
+  // Struktur: users/{uid}/conversations/{convId} — satu dokumen per percakapan.
+  // Ini bikin semua HP yang login ke akun yang sama bisa lihat riwayat yang sama.
+  let convsCollectionUnsub = null;
+  let isApplyingRemoteSnapshot = false; // cegah loop: snapshot masuk -> render -> trigger save lagi
+  let saveDebounceTimer = null;
+  const PENDING_SAVE_IDS = new Set();
+
+  function convDocRef(uid, convId){
+    return db.collection('users').doc(uid).collection('conversations').doc(convId);
+  }
+
+  function loadConversationsFromCloud(uid){
+    stopConversationsSync();
+    convsCollectionUnsub = db.collection('users').doc(uid).collection('conversations')
+      .onSnapshot(snapshot => {
+        isApplyingRemoteSnapshot = true;
+        snapshot.docChanges().forEach(change => {
+          const id = change.doc.id;
+          if(change.type === 'removed'){
+            delete conversations[id];
+            if(currentConvId === id) currentConvId = null;
+          } else {
+            const data = change.doc.data();
+            conversations[id] = {
+              title: data.title || t('newChatTitle'),
+              messages: data.messages || [],
+              updatedAt: data.updatedAt || 0
+            };
+          }
+        });
+        // Kalau belum ada convo aktif dan ada riwayat, tampilkan yang paling baru diupdate
+        if(!currentConvId){
+          const ids = Object.keys(conversations);
+          if(ids.length > 0){
+            ids.sort((a,b) => (conversations[b].updatedAt||0) - (conversations[a].updatedAt||0));
+            currentConvId = ids[0];
+          }
+        }
+        renderHistory();
+        renderChat();
+        isApplyingRemoteSnapshot = false;
+      }, err => {
+        console.error('[Farvion] Gagal sinkronisasi riwayat chat dari Firestore:', err);
+      });
+  }
+
+  function stopConversationsSync(){
+    if(convsCollectionUnsub){
+      convsCollectionUnsub();
+      convsCollectionUnsub = null;
+    }
+  }
+
+  // Dipanggil tiap kali data percakapan berubah (pesan baru, judul baru, dst).
+  // Di-debounce supaya tidak nulis ke Firestore di setiap keystroke/token streaming.
+  function scheduleSaveConversation(convId){
+    if(isApplyingRemoteSnapshot) return; // perubahan ini datang dari cloud, jangan ditulis balik
+    if(!currentUser || !convId || !conversations[convId]) return;
+    PENDING_SAVE_IDS.add(convId);
+    if(saveDebounceTimer) clearTimeout(saveDebounceTimer);
+    saveDebounceTimer = setTimeout(flushPendingSaves, 600);
+  }
+
+  function flushPendingSaves(){
+    if(!currentUser) { PENDING_SAVE_IDS.clear(); return; }
+    const uid = currentUser.uid;
+    const ids = Array.from(PENDING_SAVE_IDS);
+    PENDING_SAVE_IDS.clear();
+    ids.forEach(id => {
+      const conv = conversations[id];
+      if(!conv) return; // sudah dihapus sebelum sempat tersimpan
+      conv.updatedAt = Date.now();
+      const payload = {
+        title: conv.title,
+        messages: conv.messages,
+        updatedAt: conv.updatedAt
+      };
+      // Firestore membatasi ukuran dokumen ~1MB. Lampiran base64 (gambar/file) bisa
+      // bikin kelebihan kalau chat-nya panjang. Cek dulu supaya gagalnya jelas di console
+      // daripada senyap, bukan supaya menghapus data secara diam-diam.
+      const approxBytes = new Blob([JSON.stringify(payload)]).size;
+      if(approxBytes > 900000){
+        console.warn('[Farvion] Percakapan "' + conv.title + '" mendekati/melebihi batas ukuran dokumen Firestore (~1MB) karena lampiran base64. Tidak disimpan ke cloud kali ini.');
+        return;
+      }
+      convDocRef(uid, id).set(payload).catch(err => {
+        console.error('[Farvion] Gagal simpan percakapan ke Firestore:', err);
+      });
+    });
+  }
+
+  // Panggil ini setiap kali sebuah percakapan dihapus dari state lokal supaya
+  // dokumennya juga terhapus di Firestore (mis. dari fitur hapus riwayat di masa depan).
+  function deleteConversationFromCloud(convId){
+    if(!currentUser) return;
+    convDocRef(currentUser.uid, convId).delete().catch(err => {
+      console.error('[Farvion] Gagal hapus percakapan di Firestore:', err);
+    });
+  }
   let pendingAttachments = []; // {id, kind:'image'|'file', name, mimeType, dataUrl?, base64?, text?}
   let attachCounter = 0;
 
@@ -2816,7 +2927,18 @@
     const val = document.getElementById('apiKeyInput').value.trim();
     if(!val){ closeKeyModal(); return; }
     apiKey = val;
-    localStorage.setItem('farvion_gemini_api_key', apiKey);
+    try{
+      localStorage.setItem('farvion_gemini_api_key', apiKey);
+      // Verifikasi langsung: baca lagi untuk memastikan benar-benar tersimpan
+      // (di beberapa browser/mode, write bisa "berhasil" tanpa error tapi tidak persisten).
+      const check = localStorage.getItem('farvion_gemini_api_key');
+      if(check !== apiKey){
+        console.warn('[Farvion] localStorage tidak persisten — key mungkin hilang setelah refresh.');
+      }
+    } catch(e){
+      console.error('[Farvion] Gagal simpan API key ke localStorage:', e);
+      alert(t('errors.apiKeyStorageFailed'));
+    }
     document.getElementById('statusDot').className = 'dot on';
     document.getElementById('statusText').textContent = t('sidebar.apiKeyReady');
     document.getElementById('statusText').removeAttribute('data-i18n');
@@ -4170,6 +4292,7 @@
     scroll.scrollTop = scroll.scrollHeight;
 
     updatePlaceholder();
+    scheduleSaveConversation(currentConvId);
   }
 
   async function sendMessage(){
@@ -4891,13 +5014,21 @@
 
   // Muat API key yang tersimpan di perangkat ini, kalau ada
   (function loadSavedApiKey(){
-    const saved = localStorage.getItem('farvion_gemini_api_key');
+    let saved = null;
+    try{
+      saved = localStorage.getItem('farvion_gemini_api_key');
+    } catch(e){
+      console.error('[Farvion] localStorage tidak bisa diakses (mode private/incognito atau diblokir):', e);
+      return;
+    }
     if(saved){
       apiKey = saved;
       document.getElementById('statusDot').className = 'dot on';
       document.getElementById('statusText').textContent = t('sidebar.apiKeyReady');
       document.getElementById('statusText').removeAttribute('data-i18n');
       document.getElementById('sendBtn').disabled = false;
+    } else {
+      console.log('[Farvion] Tidak ada API key tersimpan di localStorage.');
     }
   })();
 </script>
