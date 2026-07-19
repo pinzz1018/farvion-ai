@@ -4231,7 +4231,9 @@
           conv.messages.pop();
         }
       }
-      conv.messages.push({ role:'ai', text: t('errors.geminiConnectionFailed'), error:true });
+      // DEBUG SEMENTARA: tampilkan detail exception langsung di chat.
+      const debugDetail = (err && err.name ? err.name : 'Error') + ': ' + (err && err.message ? err.message : String(err)) + (err && err.stack ? '\n' + err.stack.split('\n').slice(0,3).join('\n') : '');
+      conv.messages.push({ role:'ai', text: t('errors.geminiConnectionFailed') + '\n\n[DEBUG: ' + debugDetail + ']', error:true });
       renderChat();
     }
 
