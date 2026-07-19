@@ -2356,10 +2356,10 @@
       'a11y.manageConnectors': 'Kelola konektor',
       'a11y.removeAttachment': 'Hapus lampiran',
       'errors.loginFailed': 'Gagal masuk',
-      'errors.geminiGeneric': 'Terjadi kesalahan saat menghubungi Gemini API.',
-      'errors.geminiConnectionFailed': 'Gagal terhubung ke Gemini API',
-      'errors.noResponse': 'Maaf, tidak ada respons yang bisa ditampilkan.',
-      'errors.emptyStream': '(stream kosong — tidak ada satu byte pun yang diterima dari server)',
+      'errors.geminiGeneric': 'Lagi ada gangguan koneksi ke AI nih, coba kirim ulang pesannya ya.',
+      'errors.geminiConnectionFailed': 'Lagi susah connect ke server AI. Coba beberapa saat lagi ya.',
+      'errors.noResponse': 'Hmm, aku belum dapat jawaban yang jelas. Coba tanya ulang dengan kata lain ya?',
+      'errors.emptyStream': 'Lagi ada gangguan koneksi ke AI nih, coba kirim ulang pesannya ya.',
     },
     en: {
       'brand.sub': 'Your everyday AI assistant',
@@ -2463,10 +2463,10 @@
       'a11y.manageConnectors': 'Manage connectors',
       'a11y.removeAttachment': 'Remove attachment',
       'errors.loginFailed': 'Sign-in failed',
-      'errors.geminiGeneric': 'An error occurred while contacting the Gemini API.',
-      'errors.geminiConnectionFailed': 'Failed to connect to the Gemini API',
-      'errors.noResponse': 'Sorry, there\'s no response to show.',
-      'errors.emptyStream': '(empty stream — not a single byte was received from the server)',
+      'errors.geminiGeneric': 'Having trouble connecting to the AI right now — try sending your message again.',
+      'errors.geminiConnectionFailed': 'Having trouble reaching the AI server. Please try again shortly.',
+      'errors.noResponse': 'Hmm, I didn\'t get a clear answer. Could you try asking that a different way?',
+      'errors.emptyStream': 'Having trouble connecting to the AI right now — try sending your message again.',
     }
   };
 
@@ -4222,6 +4222,7 @@
 
       await streamGeminiReply(conv, contents);
     } catch(err){
+      console.error('[Farvion] sendMessage gagal:', err);
       resetTypingState();
       const lastAi = conv.messages[conv.messages.length - 1];
       if(lastAi && lastAi.role === 'ai'){
@@ -4230,7 +4231,7 @@
           conv.messages.pop();
         }
       }
-      conv.messages.push({ role:'ai', text: t('errors.geminiConnectionFailed') + ': ' + err.message, error:true });
+      conv.messages.push({ role:'ai', text: t('errors.geminiConnectionFailed'), error:true });
       renderChat();
     }
 
@@ -4312,6 +4313,59 @@
 
   const MAX_TOOL_CALL_ITERATIONS = 5; // batas aman supaya tidak infinite loop kalau Gemini terus manggil tool
 
+  // Model yang dipakai untuk deteksi tool-call (list repo/browse/baca file/push).
+  // Dipisah dari model jawaban biasa karena gemini-3.5-flash dilaporkan kadang
+  // lambat (>1 menit) atau gagal (MALFORMED_FUNCTION_CALL) saat diminta membuat
+  // function call, sedangkan gemini-2.5-flash lebih stabil untuk kasus ini.
+  const GEMINI_TOOL_MODEL = 'gemini-2.5-flash';
+  const GEMINI_CHAT_MODEL = 'gemini-3.5-flash';
+
+  // Helper terpusat untuk memanggil Gemini API (non-stream) dengan timeout dan
+  // retry otomatis. Dipakai supaya error rate-limit (429) atau gangguan server
+  // sementara (5xx) tidak langsung membuat Farvion menyerah di percobaan pertama.
+  // Return { ok:true, data } kalau berhasil, atau { ok:false, status, err } kalau
+  // gagal setelah semua percobaan retry habis.
+  async function fetchGeminiWithRetry(model, payload, { timeoutMs = 20000, maxRetries = 2 } = {}){
+    let lastError = null;
+    for(let attempt = 0; attempt <= maxRetries; attempt++){
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          }
+        );
+        clearTimeout(timeoutId);
+
+        if(res.ok){
+          const data = await res.json();
+          return { ok: true, data };
+        }
+
+        // 429 (rate limit) dan 5xx (gangguan server sementara) layak di-retry
+        // dengan jeda singkat. Error lain (400, 401, dll) tidak akan membaik
+        // dengan retry, jadi langsung menyerah.
+        const retryable = res.status === 429 || res.status >= 500;
+        lastError = { status: res.status };
+        if(!retryable || attempt === maxRetries) break;
+        await new Promise(r => setTimeout(r, 800 * (attempt + 1))); // backoff singkat: 800ms, 1600ms, ...
+      } catch(err){
+        clearTimeout(timeoutId);
+        // AbortError (timeout) atau error jaringan — juga layak di-retry sekali
+        // lagi sebelum benar-benar menyerah.
+        lastError = { err };
+        if(attempt === maxRetries) break;
+        await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+      }
+    }
+    return { ok: false, ...lastError };
+  }
+
   // State sementara untuk menyimpan functionCall yang sedang menunggu
   // konfirmasi user lewat modal (Iya/Tidak).
   let pendingGithubPushCall = null; // { args, conv, contents }
@@ -4335,28 +4389,28 @@
     let usedAnyTool = false;
 
     for(let iteration = 0; iteration < MAX_TOOL_CALL_ITERATIONS; iteration++){
-      let data;
-      try {
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents,
-              systemInstruction,
-              tools: [{ functionDeclarations: GITHUB_ALL_TOOL_DECLARATIONS }],
-              generationConfig: { thinkingConfig: { thinkingLevel: 'low' } }
-            })
-          }
-        );
-        if(!res.ok) return usedAnyTool ? true : false; // kalau sudah sempat pakai tool, jangan lempar balik ke jalur normal
-        data = await res.json();
-      } catch(err){
-        return usedAnyTool ? true : false;
+      const result = await fetchGeminiWithRetry(GEMINI_TOOL_MODEL, {
+        contents,
+        systemInstruction,
+        tools: [{ functionDeclarations: GITHUB_ALL_TOOL_DECLARATIONS }],
+        generationConfig: { thinkingConfig: { thinkingLevel: 'low' } }
+      });
+
+      if(!result.ok){
+        // Gagal setelah semua retry. Kalau sebelumnya sempat berhasil pakai
+        // tool (misal list repo sukses tapi baca file berikutnya gagal),
+        // tampilkan apa yang sudah didapat, dibingkai sebagai jawaban yang
+        // tetap membantu — bukan pesan error teknis.
+        if(usedAnyTool){
+          finishGithubToolConversation(conv, t('errors.geminiGeneric'));
+          return true;
+        }
+        // Belum sempat pakai tool sama sekali — lanjutkan ke jalur streaming
+        // normal, supaya user tetap dapat jawaban (meski tanpa data GitHub).
+        return false;
       }
 
-      const parts = data?.candidates?.[0]?.content?.parts || [];
+      const data = result.data;
       const callPart = parts.find(p => p.functionCall);
       if(!callPart){
         // Gemini tidak (lagi) minta tool apapun.
@@ -4386,8 +4440,12 @@
       }
 
       if(!GITHUB_READONLY_TOOL_NAMES.has(name)){
-        // Nama tool tidak dikenal — hentikan loop, biarkan jalur normal yang menangani.
-        return usedAnyTool ? true : false;
+        // Nama tool tidak dikenal (di luar 4 tool yang kita definisikan).
+        if(usedAnyTool){
+          finishGithubToolConversation(conv, t('errors.geminiGeneric'));
+          return true;
+        }
+        return false; // biarkan jalur streaming normal yang menangani
       }
 
       // Tool read-only: eksekusi langsung, tanpa konfirmasi.
@@ -4510,6 +4568,7 @@
     try {
       await streamGeminiReply(conv, followUpContents, FARVION_SYSTEM_PROMPT);
     } catch(err){
+      console.error('[Farvion] respondGithubPushConfirm gagal:', err);
       resetTypingState();
       const lastAi = conv.messages[conv.messages.length - 1];
       if(lastAi && lastAi.role === 'ai'){
@@ -4518,7 +4577,7 @@
           conv.messages.pop();
         }
       }
-      conv.messages.push({ role:'ai', text: t('errors.geminiConnectionFailed') + ': ' + err.message, error:true });
+      conv.messages.push({ role:'ai', text: t('errors.geminiConnectionFailed'), error:true });
       renderChat();
     }
     document.getElementById('sendBtn').disabled = false;
@@ -4597,30 +4656,50 @@
   async function streamGeminiReply(conv, contents, systemPromptOverride){
     const systemPrompt = systemPromptOverride || FARVION_SYSTEM_PROMPT;
 
-    const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents,
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            generationConfig: {
-              thinkingConfig: { thinkingLevel: 'low' }
-            }
-          })
+    // Coba sampai 3x (percobaan awal + 2 retry) khusus untuk error yang layak
+    // diulang (rate limit 429, gangguan server 5xx, atau kegagalan jaringan).
+    // Error lain (400/401/dll) tidak akan membaik dengan retry.
+    let response = null;
+    let lastFailure = null;
+    const maxAttempts = 3;
+    for(let attempt = 0; attempt < maxAttempts; attempt++){
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_CHAT_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents,
+              systemInstruction: { parts: [{ text: systemPrompt }] },
+              generationConfig: {
+                thinkingConfig: { thinkingLevel: 'low' }
+              }
+            })
+          }
+        );
+        if(res.ok){
+          response = res;
+          break;
         }
-      );
+        const retryable = res.status === 429 || res.status >= 500;
+        lastFailure = { status: res.status };
+        if(!retryable || attempt === maxAttempts - 1) break;
+        await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+      } catch(err){
+        lastFailure = { err };
+        if(attempt === maxAttempts - 1) break;
+        await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+      }
+    }
 
-    if(!response.ok){
-      let errMsg = t('errors.geminiGeneric');
-      try{
-        const errData = await response.json();
-        errMsg = errData?.error?.message || errMsg;
-      } catch(_){}
-      errMsg += '\n\n(HTTP status: ' + response.status + ' ' + response.statusText + ')';
+    if(!response){
+      // Semua percobaan gagal — tampilkan pesan yang ramah tanpa detail teknis
+      // (kode status HTTP, pesan error mentah, dll) ke user. Detail lengkapnya
+      // tetap dicatat ke console untuk keperluan debugging developer.
+      console.error('[Farvion] streamGeminiReply gagal setelah retry:', lastFailure);
       conv.messages.pop(); // remove loading placeholder
-      conv.messages.push({ role:'ai', text: errMsg, error:true });
+      conv.messages.push({ role:'ai', text: t('errors.geminiGeneric'), error:true });
       renderChat();
       return;
     }
@@ -4688,12 +4767,11 @@
     if(buffer.trim()) processLine(buffer.trim());
 
     if(!sawAnyText){
-      // DEBUG SEMENTARA: tampilkan potongan raw response langsung di bubble
-      // supaya bisa dibaca tanpa perlu buka console/DevTools.
-      const debugSnippet = rawFullDump.trim()
-        ? rawFullDump.slice(0, 1200)
-        : t('errors.emptyStream');
-      aiMsg.text = t('errors.noResponse') + '\n\n--- DEBUG RAW RESPONSE ---\n' + debugSnippet;
+      // Stream tidak mengembalikan teks apapun. Catat detail mentahnya ke
+      // console untuk debugging developer, tapi tampilkan pesan yang ramah
+      // ke user — tidak ada dump teknis yang muncul di chat.
+      console.error('[Farvion] Stream tidak mengandung teks apapun. Raw response:', rawFullDump);
+      aiMsg.text = t('errors.noResponse');
       aiMsg.error = true;
       resetTypingState();
     } else {
