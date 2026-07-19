@@ -4231,9 +4231,8 @@
           conv.messages.pop();
         }
       }
-      // DEBUG SEMENTARA: tampilkan detail exception langsung di chat.
-      const debugDetail = (err && err.name ? err.name : 'Error') + ': ' + (err && err.message ? err.message : String(err)) + (err && err.stack ? '\n' + err.stack.split('\n').slice(0,3).join('\n') : '');
-      conv.messages.push({ role:'ai', text: t('errors.geminiConnectionFailed') + '\n\n[DEBUG: ' + debugDetail + ']', error:true });
+      console.error('[Farvion] Detail error:', err);
+      conv.messages.push({ role:'ai', text: t('errors.geminiConnectionFailed'), error:true });
       renderChat();
     }
 
@@ -4416,6 +4415,7 @@
       }
 
       const data = result.data;
+      const parts = data?.candidates?.[0]?.content?.parts || [];
       const callPart = parts.find(p => p.functionCall);
       if(!callPart){
         // Gemini tidak (lagi) minta tool apapun.
@@ -4704,13 +4704,7 @@
       // tetap dicatat ke console untuk keperluan debugging developer.
       console.error('[Farvion] streamGeminiReply gagal setelah retry:', lastFailure);
       conv.messages.pop(); // remove loading placeholder
-      // DEBUG SEMENTARA: tampilkan detail teknis di chat supaya bisa dibaca
-      // langsung dari HP tanpa perlu buka console. Akan dikembalikan ke pesan
-      // ramah biasa setelah penyebab errornya ditemukan.
-      let debugDetail = 'unknown';
-      if(lastFailure?.status) debugDetail = 'HTTP status: ' + lastFailure.status;
-      else if(lastFailure?.err) debugDetail = (lastFailure.err.name || 'Error') + ': ' + (lastFailure.err.message || String(lastFailure.err));
-      conv.messages.push({ role:'ai', text: t('errors.geminiGeneric') + '\n\n[DEBUG: ' + debugDetail + ']', error:true });
+      conv.messages.push({ role:'ai', text: t('errors.geminiGeneric'), error:true });
       renderChat();
       return;
     }
