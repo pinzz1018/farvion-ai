@@ -2093,17 +2093,29 @@
           <button class="connector-disconnect-btn" id="connectorGithubDisconnectBtn" onclick="disconnectGithub()" style="display:none;" data-i18n="connectors.disconnect">Putuskan</button>
         </div>
 
-        <div class="connector-item disabled" title="Segera hadir" data-i18n-title="sheet.comingSoon">
+        <div class="connector-item" id="connectorItemGoogleDrive">
           <div class="connector-item-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 3 12 11 7.5 19 3 11z"/><path d="M12 11h9l-4.5 8h-9z"/><path d="M12 11 16.5 3H21l-4.5 8z"/></svg>
           </div>
           <div class="connector-item-body">
             <div class="connector-item-name">Google Drive</div>
-            <div class="connector-item-status" data-i18n="sheet.comingSoon">Segera hadir</div>
+            <div class="connector-item-status" id="connectorDriveStatus" data-i18n="connectors.notConnected">Belum terhubung</div>
           </div>
-          <div class="connector-soon-badge" data-i18n="connectors.soonBadge">Segera</div>
+          <button class="connector-connect-btn" id="connectorDriveConnectBtn" onclick="connectGoogleDrive()" data-i18n="connectors.connect">Hubungkan</button>
+          <button class="connector-disconnect-btn" id="connectorDriveDisconnectBtn" onclick="disconnectGoogleDrive()" style="display:none;" data-i18n="connectors.disconnect">Putuskan</button>
         </div>
       </div>
+    </div>
+
+    <!-- Sub-halaman: daftar file/folder Google Drive milik user -->
+    <div class="sheet-page" id="sheetPageDriveList">
+      <div class="repo-browser-breadcrumb" id="driveBrowserBreadcrumb"></div>
+      <div id="driveBrowserContent"></div>
+    </div>
+
+    <!-- Sub-halaman: preview file Google Drive sebelum dilampirkan ke chat -->
+    <div class="sheet-page" id="sheetPageDriveFilePreview">
+      <div id="driveFilePreviewContent"></div>
     </div>
 
     <!-- Sub-halaman: pilih metode koneksi GitHub (OAuth vs PAT) -->
@@ -2290,6 +2302,22 @@
       'repo.attachedToast': 'File dilampirkan ke chat.',
       'repo.private': 'Privat',
       'repo.public': 'Publik',
+
+      'drive.loading': 'Memuat Google Drive…',
+      'drive.loadingContents': 'Memuat isi folder…',
+      'drive.loadingFile': 'Memuat isi file…',
+      'drive.empty': 'Tidak ada file ditemukan.',
+      'drive.emptyFolder': 'Folder ini kosong.',
+      'drive.errorGeneric': 'Gagal memuat data dari Google Drive. Coba lagi.',
+      'drive.errorUnauthorized': 'Koneksi Google Drive sudah tidak valid. Sambungkan ulang.',
+      'drive.fileTooLarge': 'File terlalu besar untuk dilampirkan (maks 500 KB).',
+      'drive.fileNotText': 'File ini bukan file teks yang bisa dibaca sebagai konten.',
+      'drive.attachFile': 'Lampirkan ke Chat',
+      'drive.viewInDrive': 'Buka di Google Drive',
+      'drive.attachedToast': 'File dilampirkan ke chat.',
+      'drive.connecting': 'Menghubungkan…',
+      'drive.oauthFailed': 'Gagal menghubungkan Google Drive. Coba lagi.',
+      'sheetTitle.driveList': 'Google Drive',
       'connectors.oauthTitle': 'Login dengan GitHub',
       'connectors.oauthDesc': 'Cepat — tinggal setujui izin di GitHub, tanpa perlu buat token manual.',
       'connectors.patTitle': 'Gunakan Personal Access Token',
@@ -2330,7 +2358,7 @@
       'composer.placeholder': 'Mengobrol dengan Farvion...',
       'toast.copied': 'Disalin',
       'modal.apiKeyTitle': 'Masukkan API Key Gemini',
-      'modal.apiKeyDesc': 'Farvion butuh API key Gemini kamu sendiri untuk jalan. Key ini <b>disimpan di penyimpanan lokal browser kamu (localStorage)</b> sehingga tidak perlu dimasukkan ulang tiap buka halaman — dan tidak pernah dikirim ke server manapun kecuali langsung ke Google. Belum punya key? Ambil gratis di <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.',
+      'modal.apiKeyDesc': 'Farvion butuh API key Gemini kamu sendiri untuk jalan. Key ini <b>disimpan dengan aman dan terikat ke akunmu</b>, sehingga tidak perlu dimasukkan ulang tiap buka halaman atau ganti perangkat — dan tidak pernah dikirim ke server manapun kecuali langsung ke Google. Belum punya key? Ambil gratis di <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.',
       'modal.cancel': 'Batal',
       'modal.saveStart': 'Simpan & mulai',
       'modal.githubPushTitle': 'Konfirmasi push ke GitHub',
@@ -2398,6 +2426,22 @@
       'repo.attachedToast': 'File attached to chat.',
       'repo.private': 'Private',
       'repo.public': 'Public',
+
+      'drive.loading': 'Loading Google Drive…',
+      'drive.loadingContents': 'Loading folder contents…',
+      'drive.loadingFile': 'Loading file contents…',
+      'drive.empty': 'No files found.',
+      'drive.emptyFolder': 'This folder is empty.',
+      'drive.errorGeneric': 'Failed to load data from Google Drive. Try again.',
+      'drive.errorUnauthorized': 'Google Drive connection is no longer valid. Reconnect.',
+      'drive.fileTooLarge': 'File is too large to attach (max 500 KB).',
+      'drive.fileNotText': 'This file is not readable as text content.',
+      'drive.attachFile': 'Attach to Chat',
+      'drive.viewInDrive': 'Open in Google Drive',
+      'drive.attachedToast': 'File attached to chat.',
+      'drive.connecting': 'Connecting…',
+      'drive.oauthFailed': 'Failed to connect Google Drive. Try again.',
+      'sheetTitle.driveList': 'Google Drive',
       'connectors.oauthTitle': 'Log in with GitHub',
       'connectors.oauthDesc': 'Fast — just approve access on GitHub, no manual token needed.',
       'connectors.patTitle': 'Use a Personal Access Token',
@@ -2438,7 +2482,7 @@
       'composer.placeholder': 'Chat with Farvion...',
       'toast.copied': 'Copied',
       'modal.apiKeyTitle': 'Enter your Gemini API Key',
-      'modal.apiKeyDesc': 'Farvion needs your own Gemini API key to run. This key is <b>saved in your browser\'s local storage</b> so you won\'t need to re-enter it next time — it\'s never sent anywhere except directly to Google. Don\'t have a key? Get one free at <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.',
+      'modal.apiKeyDesc': 'Farvion needs your own Gemini API key to run. This key is <b>saved securely and tied to your account</b>, so you won\'t need to re-enter it next time or on another device — it\'s never sent anywhere except directly to Google. Don\'t have a key? Get one free at <a href="https://aistudio.google.com/apikey" target="_blank">Google AI Studio</a>.',
       'modal.cancel': 'Cancel',
       'modal.saveStart': 'Save & start',
       'modal.githubPushTitle': 'Confirm push to GitHub',
@@ -2511,6 +2555,7 @@
       SHEET_PAGES.directory.title = t('sheetTitle.directory');
       SHEET_PAGES.githubMethod.title = t('sheetTitle.githubMethod');
       SHEET_PAGES.githubPat.title = t('sheetTitle.githubPat');
+      SHEET_PAGES.driveList.title = t('sheetTitle.driveList');
       // Refresh judul header kalau sub-halaman terkait sedang aktif
       if(typeof currentSheetPage !== 'undefined' && document.getElementById('sheetTitle')){
         document.getElementById('sheetTitle').textContent = (SHEET_PAGES[currentSheetPage] || SHEET_PAGES.main).title;
@@ -3123,7 +3168,9 @@
     githubPat: 'sheetPageGithubPat',
     repoList: 'sheetPageRepoList',
     repoBrowser: 'sheetPageRepoBrowser',
-    repoFilePreview: 'sheetPageRepoFilePreview'
+    repoFilePreview: 'sheetPageRepoFilePreview',
+    driveList: 'sheetPageDriveList',
+    driveFilePreview: 'sheetPageDriveFilePreview'
   };
   const SHEET_PAGES = {
     main: { title: '', showBack: false, showDiscover: false, backTarget: 'main' },
@@ -3133,7 +3180,9 @@
     githubPat: { title: 'Personal Access Token', showBack: true, showDiscover: false, backTarget: 'githubMethod' },
     repoList: { title: 'Repository', showBack: true, showDiscover: false, backTarget: 'connectors' },
     repoBrowser: { title: 'Repository', showBack: true, showDiscover: false, backTarget: 'repoList' },
-    repoFilePreview: { title: 'Preview file', showBack: true, showDiscover: false, backTarget: 'repoBrowser' }
+    repoFilePreview: { title: 'Preview file', showBack: true, showDiscover: false, backTarget: 'repoBrowser' },
+    driveList: { title: 'Google Drive', showBack: true, showDiscover: false, backTarget: 'connectors' },
+    driveFilePreview: { title: 'Preview file', showBack: true, showDiscover: false, backTarget: 'driveList' }
   };
   let currentSheetPage = 'main';
 
@@ -3180,8 +3229,8 @@
   }
 
   // Sinkronkan: (1) status di item GitHub dalam direktori, (2) list "konektor
-  // terhubung" di halaman utama Konektor + toggle empty-state-nya, (3) sub-label
-  // di item "Konektor" pada sheet utama.
+  // terhubung" di halaman utama Konektor (gabungan GitHub + Google Drive) +
+  // toggle empty-state-nya, (3) sub-label di item "Konektor" pada sheet utama.
   function refreshConnectorUI(){
     const token = localStorage.getItem(GITHUB_TOKEN_KEY);
     const username = localStorage.getItem(GITHUB_USER_KEY);
@@ -3204,14 +3253,24 @@
       disconnectBtnDir.style.display = 'none';
     }
 
-    // --- halaman "Konektor" (list yang sudah terhubung / empty-state) ---
+    // Google Drive punya elemen status/tombolnya sendiri di direktori — disinkronkan terpisah.
+    refreshDriveConnectorUI();
+
+    // --- halaman "Konektor" (list gabungan yang sudah terhubung / empty-state) ---
+    const driveToken = localStorage.getItem(DRIVE_ACCESS_TOKEN_KEY);
+    const driveEmail = localStorage.getItem(DRIVE_EMAIL_KEY);
+    const isDriveConnected = !!driveToken;
+
     const connectedList = document.getElementById('connectorConnectedList');
     const emptyState = document.getElementById('connectorEmptyState');
     const entrySub = document.getElementById('connectorEntrySub');
 
+    let itemsHtml = '';
+    const subLabels = [];
+
     if(isConnected){
       const statusText = username ? `${t('connectors.connectedAs')} @${username}` : t('connectors.connected');
-      connectedList.innerHTML = `
+      itemsHtml += `
         <div class="connector-item">
           <div class="connector-item-icon">${githubConnectorSvg()}</div>
           <div class="connector-item-body">
@@ -3222,9 +3281,30 @@
           <button class="connector-disconnect-btn" onclick="disconnectGithub()">${t('connectors.disconnect')}</button>
         </div>
       `;
+      subLabels.push(username ? `GitHub · @${username}` : 'GitHub');
+    }
+
+    if(isDriveConnected){
+      const statusText = driveEmail ? `${t('connectors.connectedAs')} ${driveEmail}` : t('connectors.connected');
+      itemsHtml += `
+        <div class="connector-item">
+          <div class="connector-item-icon">${driveConnectorSvg()}</div>
+          <div class="connector-item-body">
+            <div class="connector-item-name">Google Drive</div>
+            <div class="connector-item-status connected">${statusText}</div>
+          </div>
+          <button class="connector-disconnect-btn" onclick="openDriveList()">${t('connectors.browseRepos')}</button>
+          <button class="connector-disconnect-btn" onclick="disconnectGoogleDrive()">${t('connectors.disconnect')}</button>
+        </div>
+      `;
+      subLabels.push(driveEmail ? `Google Drive · ${driveEmail}` : 'Google Drive');
+    }
+
+    if(isConnected || isDriveConnected){
+      connectedList.innerHTML = itemsHtml;
       connectedList.style.display = 'flex';
       emptyState.style.display = 'none';
-      entrySub.textContent = username ? `GitHub · @${username}` : t('connectors.connected');
+      entrySub.textContent = subLabels.join(' · ');
     } else {
       connectedList.innerHTML = '';
       connectedList.style.display = 'none';
@@ -3342,7 +3422,370 @@
     }
   }
 
-  // ====== KONEKTOR: GitHub — Jelajahi Repo (read-only) ======
+  // ====== KONEKTOR: Google Drive (OAuth + refresh token, read-only) ======
+  const DRIVE_ACCESS_TOKEN_KEY = 'farvion_drive_access_token';
+  const DRIVE_REFRESH_TOKEN_KEY = 'farvion_drive_refresh_token';
+  const DRIVE_TOKEN_EXPIRY_KEY = 'farvion_drive_token_expiry'; // epoch ms
+  const DRIVE_EMAIL_KEY = 'farvion_drive_email';
+  const GOOGLE_CLIENT_ID = '173242416433-h6ve9j0q1daso2dalqaq2nm5f970d81f.apps.googleusercontent.com';
+  // Worker Cloudflare yang sama menangani exchange authorization_code DAN refresh_token
+  // (dibedakan lewat isi body request — lihat kode worker).
+  const DRIVE_TOKEN_EXCHANGE_URL = 'https://farvion-drive-oauth.alfinpinzz6.workers.dev';
+  // Sama seperti GitHub: Farvion static site, callback diarahkan balik ke halaman ini sendiri.
+  const DRIVE_REDIRECT_URI = window.location.origin + window.location.pathname;
+  // read-only saja — Farvion cuma browse & attach file, tidak pernah menulis ke Drive user.
+  const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
+  // Beri jeda 60 detik sebelum expiry asli supaya tidak kepepet di tengah request.
+  const DRIVE_EXPIRY_SAFETY_MARGIN_MS = 60 * 1000;
+
+  function driveConnectorSvg(){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 3 12 11 7.5 19 3 11z"/><path d="M12 11h9l-4.5 8h-9z"/><path d="M12 11 16.5 3H21l-4.5 8z"/></svg>';
+  }
+
+  // Sinkronkan status di item Google Drive dalam direktori + entry sub-label,
+  // sama seperti refreshConnectorUI() punya GitHub.
+  function refreshDriveConnectorUI(){
+    const token = localStorage.getItem(DRIVE_ACCESS_TOKEN_KEY);
+    const email = localStorage.getItem(DRIVE_EMAIL_KEY);
+    const isConnected = !!token;
+
+    const statusEl = document.getElementById('connectorDriveStatus');
+    const connectBtn = document.getElementById('connectorDriveConnectBtn');
+    const disconnectBtn = document.getElementById('connectorDriveDisconnectBtn');
+
+    if(statusEl){
+      if(isConnected){
+        statusEl.textContent = email ? `${t('connectors.connectedAs')} ${email}` : t('connectors.connected');
+        statusEl.classList.add('connected');
+        connectBtn.style.display = 'none';
+        disconnectBtn.style.display = 'inline-flex';
+      } else {
+        statusEl.textContent = t('connectors.notConnected');
+        statusEl.classList.remove('connected');
+        connectBtn.style.display = 'inline-flex';
+        disconnectBtn.style.display = 'none';
+      }
+    }
+  }
+
+  function connectGoogleDrive(){
+    // "state" dipakai supaya callback tahu redirect ini datang dari alur Google,
+    // bukan dari alur GitHub — keduanya berbagi redirect URI yang sama (root page).
+    const params = new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID,
+      redirect_uri: DRIVE_REDIRECT_URI,
+      response_type: 'code',
+      scope: DRIVE_SCOPE,
+      access_type: 'offline',   // wajib supaya Google mengirim refresh_token
+      prompt: 'consent',        // wajib juga — tanpa ini refresh_token cuma dikirim sekali seumur hidup app
+      state: 'farvion_drive_oauth',
+    });
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+  }
+
+  function disconnectGoogleDrive(){
+    localStorage.removeItem(DRIVE_ACCESS_TOKEN_KEY);
+    localStorage.removeItem(DRIVE_REFRESH_TOKEN_KEY);
+    localStorage.removeItem(DRIVE_TOKEN_EXPIRY_KEY);
+    localStorage.removeItem(DRIVE_EMAIL_KEY);
+    refreshDriveConnectorUI();
+  }
+
+  // Dipanggil sekali saat halaman dimuat: kalau URL mengandung ?code=...&state=farvion_drive_oauth
+  // berarti kita baru saja diarahkan balik oleh Google setelah user menyetujui otorisasi.
+  async function handleGoogleDriveCallback(){
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const state = params.get('state');
+    if(!code || state !== 'farvion_drive_oauth') return;
+
+    // Bersihkan ?code=...&state=... dari address bar supaya tidak tertukar lagi kalau di-refresh
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    const connectBtn = document.getElementById('connectorDriveConnectBtn');
+    if(connectBtn){
+      connectBtn.textContent = t('drive.connecting');
+      connectBtn.disabled = true;
+    }
+
+    try {
+      const res = await fetch(DRIVE_TOKEN_EXCHANGE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+
+      if(data.error){
+        alert(t('drive.oauthFailed') + ' (' + data.error + ')');
+        return;
+      }
+
+      localStorage.setItem(DRIVE_ACCESS_TOKEN_KEY, data.access_token);
+      // refresh_token cuma dikirim Google saat consent pertama kali — simpan kalau ada.
+      if(data.refresh_token) localStorage.setItem(DRIVE_REFRESH_TOKEN_KEY, data.refresh_token);
+      if(data.expires_in) localStorage.setItem(DRIVE_TOKEN_EXPIRY_KEY, String(Date.now() + data.expires_in * 1000));
+      if(data.email) localStorage.setItem(DRIVE_EMAIL_KEY, data.email);
+      refreshDriveConnectorUI();
+
+      openAttachSheet();
+      showSheetPage('connectors');
+    } catch(err){
+      alert(t('drive.oauthFailed'));
+    } finally {
+      if(connectBtn){
+        connectBtn.textContent = t('connectors.connect');
+        connectBtn.disabled = false;
+      }
+    }
+  }
+
+  // Tukar refresh_token -> access_token baru lewat Worker. Dipanggil diam-diam
+  // sebelum request ke Drive API kalau access_token sudah/hampir expired.
+  async function refreshDriveAccessToken(){
+    const refreshToken = localStorage.getItem(DRIVE_REFRESH_TOKEN_KEY);
+    if(!refreshToken) return false;
+
+    try {
+      const res = await fetch(DRIVE_TOKEN_EXCHANGE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      const data = await res.json();
+
+      if(data.error){
+        // refresh_token sendiri sudah invalid/revoked — tidak ada jalan lain selain connect ulang.
+        disconnectGoogleDrive();
+        return false;
+      }
+
+      localStorage.setItem(DRIVE_ACCESS_TOKEN_KEY, data.access_token);
+      if(data.refresh_token) localStorage.setItem(DRIVE_REFRESH_TOKEN_KEY, data.refresh_token);
+      if(data.expires_in) localStorage.setItem(DRIVE_TOKEN_EXPIRY_KEY, String(Date.now() + data.expires_in * 1000));
+      return true;
+    } catch(err){
+      return false; // network error — biarkan pemanggil menangani sebagai gagal
+    }
+  }
+
+  // Pastikan access_token yang dipakai masih fresh; refresh dulu diam-diam kalau perlu.
+  // Return access_token yang siap pakai, atau null kalau tidak ada cara mendapatkannya.
+  async function ensureFreshDriveToken(){
+    const token = localStorage.getItem(DRIVE_ACCESS_TOKEN_KEY);
+    if(!token) return null;
+
+    const expiry = Number(localStorage.getItem(DRIVE_TOKEN_EXPIRY_KEY) || 0);
+    const isExpiringSoon = !expiry || (Date.now() > expiry - DRIVE_EXPIRY_SAFETY_MARGIN_MS);
+
+    if(!isExpiringSoon) return token;
+
+    const refreshed = await refreshDriveAccessToken();
+    return refreshed ? localStorage.getItem(DRIVE_ACCESS_TOKEN_KEY) : null;
+  }
+
+  // Wrapper fetch ke Google Drive API v3, dengan auto-refresh token dan
+  // penanganan error konsisten (mirror dari githubApi()).
+  async function driveApi(path){
+    const token = await ensureFreshDriveToken();
+    if(!token){
+      return { ok: false, kind: 'unauthorized' };
+    }
+
+    let res;
+    try {
+      res = await fetch(`https://www.googleapis.com/drive/v3${path}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+    } catch(err){
+      return { ok: false, kind: 'network' };
+    }
+
+    if(res.status === 401){
+      // Token ternyata masih invalid meski sudah di-refresh (atau refresh gagal diam-diam
+      // sebelumnya) — bersihkan biar UI konsisten, user perlu connect ulang.
+      disconnectGoogleDrive();
+      return { ok: false, kind: 'unauthorized' };
+    }
+    if(res.status === 403){
+      return { ok: false, kind: 'forbidden' };
+    }
+    if(!res.ok){
+      return { ok: false, kind: 'generic', status: res.status };
+    }
+
+    const data = await res.json();
+    return { ok: true, data };
+  }
+
+  function driveBrowserErrorText(kind){
+    if(kind === 'unauthorized') return t('drive.errorUnauthorized');
+    return t('drive.errorGeneric');
+  }
+
+  const DRIVE_FOLDER_MIME = 'application/vnd.google-apps.folder';
+  const DRIVE_FILE_MAX_BYTES = 500 * 1024; // samakan dengan batas GitHub, aman buat konteks chat
+  // Google Workspace files (Docs/Sheets/Slides) tidak bisa didownload langsung sebagai
+  // teks — perlu di-export lewat endpoint terpisah dengan mimeType tujuan.
+  const DRIVE_EXPORT_MIME_MAP = {
+    'application/vnd.google-apps.document': 'text/plain',
+    'application/vnd.google-apps.spreadsheet': 'text/csv',
+    'application/vnd.google-apps.presentation': 'text/plain',
+  };
+
+  let driveBrowserPath = []; // array of { id, name }, path breadcrumb dari root
+  let driveBrowserPendingFile = null;
+
+  function openDriveList(){
+    driveBrowserPath = [];
+    showSheetPage('driveList');
+    document.getElementById('sheetTitle').textContent = 'Google Drive';
+    renderDriveBreadcrumb();
+    loadDriveContents();
+  }
+
+  function renderDriveBreadcrumb(){
+    const el = document.getElementById('driveBrowserBreadcrumb');
+    if(!el) return;
+    const crumbs = [{ id: null, name: 'Drive' }, ...driveBrowserPath];
+    el.innerHTML = crumbs.map((c, i) => {
+      const isLast = i === crumbs.length - 1;
+      const sep = i > 0 ? '<span class="crumb-sep">/</span>' : '';
+      return `${sep}<span class="crumb" onclick="driveBreadcrumbGo(${i})">${escapeHtml(c.name)}</span>`;
+    }).join('');
+  }
+
+  function driveBreadcrumbGo(index){
+    driveBrowserPath = driveBrowserPath.slice(0, index); // index 0 = root ("Drive")
+    renderDriveBreadcrumb();
+    loadDriveContents();
+  }
+
+  async function loadDriveContents(){
+    const el = document.getElementById('driveBrowserContent');
+    el.innerHTML = repoBrowserStateHtml('loading', t('drive.loadingContents'));
+
+    const parentId = driveBrowserPath.length ? driveBrowserPath[driveBrowserPath.length - 1].id : 'root';
+    const q = encodeURIComponent(`'${parentId}' in parents and trashed = false`);
+    const fields = encodeURIComponent('files(id,name,mimeType,size)');
+    const result = await driveApi(`/files?q=${q}&fields=${fields}&orderBy=folder,name&pageSize=200`);
+
+    if(!result.ok){
+      el.innerHTML = repoBrowserStateHtml('error', driveBrowserErrorText(result.kind));
+      return;
+    }
+
+    const items = result.data.files || [];
+    if(!items.length){
+      el.innerHTML = repoBrowserStateHtml('empty', t('drive.emptyFolder'));
+      return;
+    }
+
+    el.innerHTML = `<div class="repo-browser-list">${items.map(item => {
+      const isDir = item.mimeType === DRIVE_FOLDER_MIME;
+      const sizeLabel = isDir || !item.size ? '' : formatFileSize(Number(item.size));
+      const action = isDir
+        ? `openDriveFolder('${escapeHtml(item.id)}','${escapeHtml(item.name)}')`
+        : `openDriveFile('${escapeHtml(item.id)}','${escapeHtml(item.name)}','${escapeHtml(item.mimeType)}',${item.size || 0})`;
+      return `
+        <button class="repo-browser-item" onclick="${action}">
+          <div class="repo-browser-item-icon ${isDir ? 'dir' : ''}">${isDir ? folderIconSvg() : fileIconSvg()}</div>
+          <div class="repo-browser-item-body">
+            <div class="repo-browser-item-name">${escapeHtml(item.name)}</div>
+            ${sizeLabel ? `<div class="repo-browser-item-sub">${sizeLabel}</div>` : ''}
+          </div>
+        </button>
+      `;
+    }).join('')}</div>`;
+  }
+
+  function openDriveFolder(id, name){
+    driveBrowserPath.push({ id, name });
+    renderDriveBreadcrumb();
+    loadDriveContents();
+  }
+
+  async function openDriveFile(id, name, mimeType, size){
+    showSheetPage('driveFilePreview');
+    document.getElementById('sheetTitle').textContent = name;
+    const el = document.getElementById('driveFilePreviewContent');
+    el.innerHTML = repoBrowserStateHtml('loading', t('drive.loadingFile'));
+
+    const exportMime = DRIVE_EXPORT_MIME_MAP[mimeType];
+
+    if(!exportMime && size > DRIVE_FILE_MAX_BYTES){
+      el.innerHTML = repoBrowserStateHtml('error', t('drive.fileTooLarge'));
+      return;
+    }
+
+    const token = await ensureFreshDriveToken();
+    if(!token){
+      el.innerHTML = repoBrowserStateHtml('error', t('drive.errorUnauthorized'));
+      return;
+    }
+
+    // File Google Workspace (Docs/Sheets/Slides) perlu di-export; file biasa didownload langsung.
+    const url = exportMime
+      ? `https://www.googleapis.com/drive/v3/files/${id}/export?mimeType=${encodeURIComponent(exportMime)}`
+      : `https://www.googleapis.com/drive/v3/files/${id}?alt=media`;
+
+    let res;
+    try {
+      res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+    } catch(err){
+      el.innerHTML = repoBrowserStateHtml('error', t('drive.errorGeneric'));
+      return;
+    }
+
+    if(res.status === 401){
+      disconnectGoogleDrive();
+      el.innerHTML = repoBrowserStateHtml('error', t('drive.errorUnauthorized'));
+      return;
+    }
+    if(!res.ok){
+      el.innerHTML = repoBrowserStateHtml('error', t('drive.errorGeneric'));
+      return;
+    }
+
+    const decoded = await res.text();
+
+    // Deteksi biner sederhana, sama seperti versi GitHub.
+    const controlCharRatio = (decoded.match(/[\x00-\x08\x0E-\x1F]/g) || []).length / Math.max(decoded.length, 1);
+    if(controlCharRatio > 0.02){
+      el.innerHTML = repoBrowserStateHtml('error', t('drive.fileNotText'));
+      return;
+    }
+
+    driveBrowserPendingFile = { name, text: decoded, driveId: id };
+
+    el.innerHTML = `
+      <div class="repo-file-preview">
+        <div class="repo-file-preview-meta">${escapeHtml(name)}${size ? ' · ' + formatFileSize(size) : ''}</div>
+        <div class="repo-file-preview-code">${escapeHtml(decoded)}</div>
+        <div class="repo-file-preview-actions">
+          <button onclick="window.open('https://drive.google.com/file/d/${id}/view', '_blank', 'noopener')">${t('drive.viewInDrive')}</button>
+          <button class="primary" onclick="attachDriveFileToChat()">${t('drive.attachFile')}</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Push file yang sedang di-preview ke pendingAttachments, pola sama dengan attachRepoFileToChat().
+  function attachDriveFileToChat(){
+    if(!driveBrowserPendingFile) return;
+    pendingAttachments.push({
+      id: 'att' + (++attachCounter),
+      kind: 'file',
+      name: driveBrowserPendingFile.name,
+      mimeType: 'text/plain',
+      text: driveBrowserPendingFile.text
+    });
+    renderAttachPreview();
+    driveBrowserPendingFile = null;
+    closeAttachSheet();
+  }
+
+
   // State navigasi: repo yang sedang dibuka + jejak folder (breadcrumb) di dalamnya.
   let repoBrowserCurrentRepo = null; // { owner, name, private }
   let repoBrowserPath = [];          // array of folder name, mis. ['src', 'components']
@@ -3608,6 +4051,7 @@
 
   refreshConnectorUI();
   handleGithubCallback();
+  handleGoogleDriveCallback();
 
   // Drag dari mana saja di badan sheet (bukan cuma handle-nya): support touch & mouse
   let sheetDragStartY = 0;
