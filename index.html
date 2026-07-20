@@ -359,11 +359,12 @@
   }
 
   .typing-dots{
-    display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding: 6px 0;
+    display:flex; flex-direction:row; align-items:center; gap:8px; padding: 6px 0;
   }
   .typing-dots .loading-pinwheel{
-    width: 22px;
-    height: 22px;
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
     color: var(--terracotta);
     animation: farvionSpin 1.6s cubic-bezier(.65,.05,.36,1) infinite;
     transform-origin: 50% 50%;
@@ -380,30 +381,37 @@
 
   /* Teks status tool-calling ("sedang ngapain") dengan efek shimmer bergerak
      kiri->kanan berulang-ulang, mirip indikator "menggunakan tool" di Claude.
-     Base color teks pudar (--ink-soft), lalu ada highlight terang yang nyapu
-     lewat berkali-kali via background-position looping. */
+     Base color teks biru khas Farvion, dengan highlight terang yang nyapu
+     lewat berkali-kali via background-position looping. display:inline-block
+     + text-align:left menjaga teks tetap rata kiri (tidak loncat ke kanan)
+     walau isinya berubah-ubah (spasi/delete saat streaming). */
   .tool-status-text{
+    display:inline-block;
+    text-align:left;
     font-size: 13.5px;
     font-weight: 500;
     line-height: 1.4;
+    font-family: inherit;
     background-image: linear-gradient(
-      100deg,
-      var(--ink-soft) 35%,
-      var(--ink) 50%,
-      var(--ink-soft) 65%
+      90deg,
+      var(--terracotta-pale) 0%,
+      var(--terracotta-pale) 40%,
+      var(--terracotta) 50%,
+      var(--terracotta-pale) 60%,
+      var(--terracotta-pale) 100%
     );
-    background-size: 200% 100%;
-    background-position: 100% 0;
+    background-size: 250% 100%;
+    background-position: 200% 0;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    animation: farvionShimmer 1.8s linear infinite;
+    animation: farvionShimmer 2.2s linear infinite;
     white-space: pre-wrap;
     word-break: break-word;
   }
   @keyframes farvionShimmer{
-    0%{ background-position: 100% 0; }
-    100%{ background-position: -100% 0; }
+    0%{ background-position: 200% 0; }
+    100%{ background-position: -50% 0; }
   }
 
   .error-note{
@@ -5282,7 +5290,7 @@
         ` : '';
         row.innerHTML = `
           <div class="msg-ai-col">
-            <div class="msg-bubble">${showPinwheel ? '<div class="typing-dots">' + (msg.toolStatus ? '<div class="tool-status-text">' + escapeHtml(msg.toolStatus) + '</div>' : '') + '<div class="loading-pinwheel">' + pinwheelLogoSvg() + '</div></div>' : (msg.error ? '<div class="error-note">' + escapeHtml(msg.text) + '</div>' : renderMarkdown(msg.text))}</div>
+            <div class="msg-bubble">${showPinwheel ? '<div class="typing-dots"><div class="loading-pinwheel">' + pinwheelLogoSvg() + '</div>' + (msg.toolStatus ? '<div class="tool-status-text">' + escapeHtml(msg.toolStatus) + '</div>' : '') + '</div>' : (msg.error ? '<div class="error-note">' + escapeHtml(msg.text) + '</div>' : renderMarkdown(msg.text))}</div>
             ${actionsHtml}
           </div>
         `;
@@ -5381,7 +5389,7 @@
 
   // Instruksi khusus untuk turn deteksi tool-call: menjelaskan semua tool GitHub
   // yang tersedia (3 read-only + 1 tulis/push), tidak menggantikan system prompt utama.
-  const GITHUB_TOOL_SYSTEM_ADDENDUM = "ATURAN STATUS TEXT — SETIAP kali kamu memanggil salah satu tool di bawah (function call apapun), kamu WAJIB menyertakan SATU baris teks singkat (maksimal 6 kata, bahasa Indonesia, present tense/progresif, TANPA tanda kutip) sebagai bagian 'text' pada respons yang SAMA, tepat sebelum function call tersebut — ini akan ditampilkan ke user sebagai status \\\"sedang apa\\\" secara real-time (contoh: 'Melihat daftar repository...', 'Membuka folder src...', 'Membaca file utils.js...', 'Menyiapkan push ke GitHub...'). Buat teksnya spesifik sesuai argumen yang kamu kirim (nama repo/file/folder), JANGAN generic. Ini WAJIB dilakukan di setiap iterasi tool call, termasuk kalau kamu memanggil tool berkali-kali secara berurutan. JANGAN taruh teks status ini di dalam jawaban final (setelah semua tool selesai) — hanya di respons yang mengandung function call.\\n\\nPENTING — kamu WAJIB menggunakan tool berikut kapan pun relevan, JANGAN pernah menjawab dengan teks biasa yang menyarankan user membuka GitHub secara manual, memakai GitHub CLI, atau mengecek sendiri — kamu punya akses langsung lewat tool ini:\n1. list_github_repos — melihat daftar repository milik user. WAJIB panggil ini kalau user bertanya repo apa saja yang dia punya/miliki.\n2. list_github_directory — melihat isi sebuah folder (file & subfolder) di dalam repo tertentu. WAJIB panggil ini kalau user minta melihat isi repo/folder tertentu. Kalau path tidak disebutkan, kosongkan path (artinya root repo).\n3. read_github_file — membaca isi satu file teks di dalam repo. WAJIB panggil ini kalau user minta melihat/membaca isi sebuah file di GitHub.\n4. push_file_to_github — commit & push (buat baru atau menimpa) satu file ke repo. Panggil ini HANYA kalau user secara jelas meminta agar sesuatu di-push/di-commit/disimpan ke GitHub/repo.\n\nUntuk tool nomor 1-3: ini operasi baca saja yang aman, panggil langsung begitu maksud user jelas, TANPA perlu konfirmasi tambahan, dan TANPA bertanya balik ke user dulu.\nUntuk tool nomor 4 (push_file_to_github): ini mengubah isi repo, jadi kalau user meminta push tapi belum jelas nama repo (format owner+repo) atau nama file/path-nya, JANGAN memanggil fungsi ini — sebaliknya balas dengan teks biasa yang menanyakan repo dan path/nama file yang dimaksud. Kalau semua informasi sudah jelas, panggil dengan argumen lengkap termasuk 'confirmation_message': kalimat singkat berbahasa Indonesia yang santai untuk menanyakan persetujuan user sebelum push benar-benar dilakukan (misal: 'Aku akan commit & push file utils.js ke repo pinzz/codspire, setuju?').\n\nKalau owner/username GitHub tidak disebutkan user secara eksplisit untuk tool manapun, gunakan username GitHub milik user yang sedang terhubung (akan diberi tahu di bawah, kalau ada) sebagai default. Ingat: user SUDAH menghubungkan akun GitHub-nya ke Farvion, jadi kamu benar-benar punya akses — jangan pernah berperilaku seolah kamu tidak punya akses.";
+  const GITHUB_TOOL_SYSTEM_ADDENDUM = "ATURAN STATUS TEXT — SETIAP kali kamu memanggil salah satu tool di bawah (function call apapun), kamu WAJIB menyertakan SATU baris teks singkat (maksimal 6 kata, bahasa Indonesia, present tense/progresif, TANPA tanda kutip) sebagai bagian 'text' pada respons yang SAMA, tepat sebelum function call tersebut — ini akan ditampilkan ke user sebagai status \\\"sedang apa\\\" secara real-time (contoh: 'Melihat daftar repository...', 'Membuka folder src...', 'Membaca file utils.js...', 'Menyiapkan push ke GitHub...'). Buat teksnya spesifik sesuai argumen yang kamu kirim (nama repo/file/folder), JANGAN generic. Ini WAJIB dilakukan di setiap iterasi tool call, termasuk kalau kamu memanggil tool berkali-kali secara berurutan. JANGAN taruh teks status ini di dalam jawaban final (setelah semua tool selesai) — hanya di respons yang mengandung function call.\\n\\nPENTING — kamu WAJIB menggunakan tool berikut kapan pun relevan, JANGAN pernah menjawab dengan teks biasa yang menyarankan user membuka GitHub secara manual, memakai GitHub CLI, atau mengecek sendiri — kamu punya akses langsung lewat tool ini:\n1. list_github_repos — melihat daftar repository milik user. WAJIB panggil ini kalau user bertanya repo apa saja yang dia punya/miliki.\n2. list_github_directory — melihat isi sebuah folder (file & subfolder) di dalam repo tertentu. WAJIB panggil ini kalau user minta melihat isi repo/folder tertentu. Kalau path tidak disebutkan, kosongkan path (artinya root repo).\n3. read_github_file — membaca isi satu file teks di dalam repo. WAJIB panggil ini kalau user minta melihat/membaca isi sebuah file di GitHub.\n4. push_file_to_github — commit & push (buat baru atau menimpa) satu file ke repo. Panggil ini HANYA kalau user secara jelas meminta agar sesuatu di-push/di-commit/disimpan ke GitHub/repo.\n\nUntuk tool nomor 1-3: ini operasi baca saja yang aman, panggil langsung begitu maksud user jelas, TANPA perlu konfirmasi tambahan, dan TANPA bertanya balik ke user dulu.\nUntuk tool nomor 4 (push_file_to_github): ini mengubah isi repo, jadi kalau user meminta push tapi belum jelas nama repo (format owner+repo) atau nama file/path-nya, JANGAN memanggil fungsi ini — sebaliknya balas dengan teks biasa yang menanyakan repo dan path/nama file yang dimaksud. Kalau semua informasi sudah jelas, panggil dengan argumen lengkap termasuk 'confirmation_message': kalimat singkat berbahasa Indonesia yang santai untuk menanyakan persetujuan user sebelum push benar-benar dilakukan (misal: 'Aku akan commit & push file utils.js ke repo pinzz/codspire, setuju?').\n\nATURAN KHUSUS read_github_file — SANGAT PENTING: setelah tool ini mengembalikan isi sebuah file, JANGAN PERNAH menempelkan ulang (paste/echo) isi file mentah tersebut ke jawaban akhir kamu, apalagi dalam code block panjang. Isi file yang dikirim balik ke kamu itu HANYA konteks internal untuk kamu baca dan pahami, BUKAN sesuatu yang harus ditampilkan verbatim ke user. Kecuali user secara eksplisit minta \\\"tampilkan/tunjukkan/copy-paste kode lengkapnya\\\", selalu balas dengan bahasa natural yang menjelaskan apa yang kamu temukan di file itu — misalnya struktur/fitur yang ada, fungsi-fungsi penting, teknologi yang dipakai, bagian yang relevan dengan pertanyaan user, atau ringkasan singkat isinya. Kalau user cuma bilang \\\"baca file X di repo Y\\\" tanpa instruksi lanjutan, anggap itu sebagai permintaan untuk kamu MEMAHAMI file itu lalu memberi ringkasan/insight singkat tentang isinya (mis. \\\"ini file utama proyeknya, isinya ada bagian X, Y, Z...\\\"), BUKAN permintaan untuk menampilkan seluruh kode ke chat. Kalau user lanjut bertanya sesuatu yang spesifik soal file itu setelah dibaca, jawab pertanyaannya berdasarkan isi file, tetap tanpa menempelkan kode secara utuh — kutip hanya potongan kecil yang relevan kalau memang perlu.\n\nKalau owner/username GitHub tidak disebutkan user secara eksplisit untuk tool manapun, gunakan username GitHub milik user yang sedang terhubung (akan diberi tahu di bawah, kalau ada) sebagai default. Ingat: user SUDAH menghubungkan akun GitHub-nya ke Farvion, jadi kamu benar-benar punya akses — jangan pernah berperilaku seolah kamu tidak punya akses.";
 
   const GITHUB_LIST_REPOS_TOOL_DECLARATION = {
     name: 'list_github_repos',
