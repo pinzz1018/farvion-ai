@@ -3332,6 +3332,7 @@
       client_id: GITHUB_CLIENT_ID,
       redirect_uri: GITHUB_REDIRECT_URI,
       scope: 'read:user repo',
+      state: 'farvion_github_oauth',
     });
     window.location.href = `https://github.com/login/oauth/authorize?${params.toString()}`;
   }
@@ -3395,7 +3396,10 @@
   async function handleGithubCallback(){
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
-    if(!code) return;
+    const state = params.get('state');
+    // Wajib cek state juga — tanpa ini, callback GitHub akan "mencuri" ?code=
+    // milik OAuth flow lain (Notion, dst) yang kebetulan mendarat di halaman yang sama.
+    if(!code || state !== 'farvion_github_oauth') return;
 
     // Bersihkan ?code=... dari address bar supaya tidak tertukar lagi kalau di-refresh
     window.history.replaceState({}, document.title, window.location.pathname);
@@ -3805,6 +3809,8 @@
   const NOTION_CLIENT_ID = '3a3d872b-594c-818d-b8bb-003744d83186';
   const NOTION_TOKEN_EXCHANGE_URL = 'https://farvion-notion-oauth.alfinpinzz6.workers.dev';
   // Sama seperti GitHub & Drive: Farvion static site, callback diarahkan balik ke halaman ini sendiri.
+  // Sama seperti GitHub & Drive: Farvion static site, callback diarahkan balik ke halaman ini sendiri.
+  // WAJIB persis sama dengan "URI Pengalihan" yang didaftarkan di Notion Developer.
   const NOTION_REDIRECT_URI = window.location.origin + window.location.pathname;
 
   function refreshNotionConnectorUI(){
