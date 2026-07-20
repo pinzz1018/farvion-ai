@@ -359,7 +359,7 @@
   }
 
   .typing-dots{
-    display:flex; align-items:center; padding: 6px 0;
+    display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding: 6px 0;
   }
   .typing-dots .loading-pinwheel{
     width: 22px;
@@ -376,6 +376,34 @@
   @keyframes farvionSpin{
     0%{ transform: rotate(0deg); }
     100%{ transform: rotate(360deg); }
+  }
+
+  /* Teks status tool-calling ("sedang ngapain") dengan efek shimmer bergerak
+     kiri->kanan berulang-ulang, mirip indikator "menggunakan tool" di Claude.
+     Base color teks pudar (--ink-soft), lalu ada highlight terang yang nyapu
+     lewat berkali-kali via background-position looping. */
+  .tool-status-text{
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.4;
+    background-image: linear-gradient(
+      100deg,
+      var(--ink-soft) 35%,
+      var(--ink) 50%,
+      var(--ink-soft) 65%
+    );
+    background-size: 200% 100%;
+    background-position: 100% 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: farvionShimmer 1.8s linear infinite;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  @keyframes farvionShimmer{
+    0%{ background-position: 100% 0; }
+    100%{ background-position: -100% 0; }
   }
 
   .error-note{
@@ -2114,6 +2142,7 @@
             <div class="connector-item-status" id="connectorNotionStatus" data-i18n="connectors.notConnected">Belum terhubung</div>
           </div>
           <button class="connector-connect-btn" id="connectorNotionConnectBtn" onclick="connectNotion()" data-i18n="connectors.connect">Hubungkan</button>
+          <button class="connector-disconnect-btn" id="connectorNotionBrowseBtn" onclick="openNotionList()" style="display:none;" data-i18n="connectors.browseNotion">Jelajahi Notion</button>
           <button class="connector-disconnect-btn" id="connectorNotionDisconnectBtn" onclick="disconnectNotion()" style="display:none;" data-i18n="connectors.disconnect">Putuskan</button>
         </div>
       </div>
@@ -2186,6 +2215,22 @@
     <!-- Sub-halaman: preview isi file teks sebelum dilampirkan ke chat -->
     <div class="sheet-page" id="sheetPageRepoFilePreview">
       <div id="repoFilePreviewContent"></div>
+    </div>
+
+    <!-- Sub-halaman: daftar halaman & database Notion yang bisa diakses integrasi -->
+    <div class="sheet-page" id="sheetPageNotionList">
+      <div id="notionListContent"></div>
+    </div>
+
+    <!-- Sub-halaman: baris-baris dalam satu database Notion -->
+    <div class="sheet-page" id="sheetPageNotionDatabaseRows">
+      <div class="repo-browser-breadcrumb" id="notionDatabaseBreadcrumb"></div>
+      <div id="notionDatabaseRowsContent"></div>
+    </div>
+
+    <!-- Sub-halaman: preview isi halaman Notion sebelum dilampirkan ke chat -->
+    <div class="sheet-page" id="sheetPageNotionFilePreview">
+      <div id="notionFilePreviewContent"></div>
     </div>
 
   </div>
@@ -2298,6 +2343,7 @@
       'connectors.connect': 'Hubungkan',
       'connectors.disconnect': 'Putuskan',
       'connectors.browseRepos': 'Jelajahi Repo',
+      'connectors.browseNotion': 'Jelajahi Notion',
       'connectors.soonBadge': 'Segera',
       'repo.loading': 'Memuat repository…',
       'repo.loadingContents': 'Memuat isi folder…',
@@ -2330,6 +2376,22 @@
       'drive.connecting': 'Menghubungkan…',
       'drive.oauthFailed': 'Gagal menghubungkan Google Drive. Coba lagi.',
       'sheetTitle.driveList': 'Google Drive',
+
+      'notion.loading': 'Memuat halaman & database Notion…',
+      'notion.loadingContents': 'Memuat isi database…',
+      'notion.loadingFile': 'Memuat isi halaman…',
+      'notion.empty': 'Belum ada halaman yang dibagikan ke integrasi ini.',
+      'notion.emptyDatabase': 'Database ini belum punya isi.',
+      'notion.emptyPage': '(Halaman ini kosong)',
+      'notion.untitled': 'Tanpa judul',
+      'notion.page': 'Halaman',
+      'notion.database': 'Database',
+      'notion.errorGeneric': 'Gagal memuat data dari Notion. Coba lagi.',
+      'notion.errorUnauthorized': 'Koneksi Notion sudah tidak valid. Sambungkan ulang.',
+      'notion.attachFile': 'Lampirkan ke Chat',
+      'notion.viewInNotion': 'Buka di Notion',
+      'notion.attachedToast': 'Halaman dilampirkan ke chat.',
+
       'connectors.oauthTitle': 'Login dengan GitHub',
       'connectors.oauthDesc': 'Cepat — tinggal setujui izin di GitHub, tanpa perlu buat token manual.',
       'connectors.patTitle': 'Gunakan Personal Access Token',
@@ -2422,6 +2484,7 @@
       'connectors.connect': 'Connect',
       'connectors.disconnect': 'Disconnect',
       'connectors.browseRepos': 'Browse Repos',
+      'connectors.browseNotion': 'Browse Notion',
       'connectors.soonBadge': 'Soon',
       'repo.loading': 'Loading repositories…',
       'repo.loadingContents': 'Loading folder contents…',
@@ -2454,6 +2517,22 @@
       'drive.connecting': 'Connecting…',
       'drive.oauthFailed': 'Failed to connect Google Drive. Try again.',
       'sheetTitle.driveList': 'Google Drive',
+
+      'notion.loading': 'Loading Notion pages & databases…',
+      'notion.loadingContents': 'Loading database contents…',
+      'notion.loadingFile': 'Loading page contents…',
+      'notion.empty': 'No pages have been shared with this integration yet.',
+      'notion.emptyDatabase': 'This database has no entries yet.',
+      'notion.emptyPage': '(This page is empty)',
+      'notion.untitled': 'Untitled',
+      'notion.page': 'Page',
+      'notion.database': 'Database',
+      'notion.errorGeneric': 'Failed to load data from Notion. Try again.',
+      'notion.errorUnauthorized': 'Notion connection is no longer valid. Reconnect.',
+      'notion.attachFile': 'Attach to Chat',
+      'notion.viewInNotion': 'Open in Notion',
+      'notion.attachedToast': 'Page attached to chat.',
+
       'connectors.oauthTitle': 'Log in with GitHub',
       'connectors.oauthDesc': 'Fast — just approve access on GitHub, no manual token needed.',
       'connectors.patTitle': 'Use a Personal Access Token',
@@ -3182,7 +3261,10 @@
     repoBrowser: 'sheetPageRepoBrowser',
     repoFilePreview: 'sheetPageRepoFilePreview',
     driveList: 'sheetPageDriveList',
-    driveFilePreview: 'sheetPageDriveFilePreview'
+    driveFilePreview: 'sheetPageDriveFilePreview',
+    notionList: 'sheetPageNotionList',
+    notionDatabaseRows: 'sheetPageNotionDatabaseRows',
+    notionFilePreview: 'sheetPageNotionFilePreview'
   };
   const SHEET_PAGES = {
     main: { title: '', showBack: false, showDiscover: false, backTarget: 'main' },
@@ -3194,7 +3276,10 @@
     repoBrowser: { title: 'Repository', showBack: true, showDiscover: false, backTarget: 'repoList' },
     repoFilePreview: { title: 'Preview file', showBack: true, showDiscover: false, backTarget: 'repoBrowser' },
     driveList: { title: 'Google Drive', showBack: true, showDiscover: false, backTarget: 'connectors' },
-    driveFilePreview: { title: 'Preview file', showBack: true, showDiscover: false, backTarget: 'driveList' }
+    driveFilePreview: { title: 'Preview file', showBack: true, showDiscover: false, backTarget: 'driveList' },
+    notionList: { title: 'Notion', showBack: true, showDiscover: false, backTarget: 'connectors' },
+    notionDatabaseRows: { title: 'Notion', showBack: true, showDiscover: false, backTarget: 'notionList' },
+    notionFilePreview: { title: 'Preview halaman', showBack: true, showDiscover: false, backTarget: 'notionList' }
   };
   let currentSheetPage = 'main';
 
@@ -3314,7 +3399,27 @@
       subLabels.push(driveEmail ? `Google Drive · ${driveEmail}` : 'Google Drive');
     }
 
-    if(isConnected || isDriveConnected){
+    const notionToken = localStorage.getItem(NOTION_ACCESS_TOKEN_KEY);
+    const notionWorkspaceName = localStorage.getItem(NOTION_WORKSPACE_NAME_KEY);
+    const isNotionConnected = !!notionToken;
+
+    if(isNotionConnected){
+      const statusText = notionWorkspaceName ? `${t('connectors.connectedAs')} ${notionWorkspaceName}` : t('connectors.connected');
+      itemsHtml += `
+        <div class="connector-item">
+          <div class="connector-item-icon">${notionConnectorSvg()}</div>
+          <div class="connector-item-body">
+            <div class="connector-item-name">Notion</div>
+            <div class="connector-item-status connected">${statusText}</div>
+          </div>
+          <button class="connector-disconnect-btn" onclick="openNotionList()">${t('connectors.browseNotion')}</button>
+          <button class="connector-disconnect-btn" onclick="disconnectNotion()">${t('connectors.disconnect')}</button>
+        </div>
+      `;
+      subLabels.push(notionWorkspaceName ? `Notion · ${notionWorkspaceName}` : 'Notion');
+    }
+
+    if(isConnected || isDriveConnected || isNotionConnected){
       connectedList.innerHTML = itemsHtml;
       connectedList.style.display = 'flex';
       emptyState.style.display = 'none';
@@ -3458,6 +3563,18 @@
 
   function driveConnectorSvg(){
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 3 12 11 7.5 19 3 11z"/><path d="M12 11h9l-4.5 8h-9z"/><path d="M12 11 16.5 3H21l-4.5 8z"/></svg>';
+  }
+
+  function notionConnectorSvg(){
+    return '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 8h10M7 12h10M7 16h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="3.5" y="3.5" width="17" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
+  }
+
+  function databaseIconSvg(){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/><path d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3"/></svg>';
+  }
+
+  function docIconSvg(){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
   }
 
   // Sinkronkan status di item Google Drive dalam direktori + entry sub-label,
@@ -3820,6 +3937,7 @@
 
     const statusEl = document.getElementById('connectorNotionStatus');
     const connectBtn = document.getElementById('connectorNotionConnectBtn');
+    const browseBtn = document.getElementById('connectorNotionBrowseBtn');
     const disconnectBtn = document.getElementById('connectorNotionDisconnectBtn');
 
     if(statusEl){
@@ -3827,11 +3945,13 @@
         statusEl.textContent = workspaceName ? `${t('connectors.connectedAs')} ${workspaceName}` : t('connectors.connected');
         statusEl.classList.add('connected');
         connectBtn.style.display = 'none';
+        if(browseBtn) browseBtn.style.display = 'inline-flex';
         disconnectBtn.style.display = 'inline-flex';
       } else {
         statusEl.textContent = t('connectors.notConnected');
         statusEl.classList.remove('connected');
         connectBtn.style.display = 'inline-flex';
+        if(browseBtn) browseBtn.style.display = 'none';
         disconnectBtn.style.display = 'none';
       }
     }
@@ -3927,6 +4047,248 @@
     return res.json();
   }
 
+  // ====== NOTION: Jelajahi halaman & database ======
+  // Pola sama seperti openRepoList()/openDriveList(): tombol di panel Konektor
+  // membuka sheet berisi daftar item yang bisa dijelajahi, lalu diklik untuk
+  // preview isinya sebelum dilampirkan ke chat.
+  const NOTION_TEXT_MAX_CHARS = 500 * 1024; // samakan batas dengan Drive & GitHub (~500 KB)
+  let notionBrowserPendingFile = null;
+  let notionCurrentDatabase = null; // { id, name } — database yang sedang dibuka row-nya
+
+  function notionBrowserErrorText(code){
+    if(code === 'unauthorized') return t('notion.errorUnauthorized');
+    return t('notion.errorGeneric');
+  }
+
+  // Dipanggil dari tombol "Jelajahi Notion" di panel Konektor.
+  function openNotionList(){
+    showSheetPage('notionList');
+    document.getElementById('sheetTitle').textContent = 'Notion';
+    loadNotionList();
+  }
+
+  // Notion tidak punya struktur folder asli — API /search mengembalikan SEMUA
+  // halaman & database yang sudah di-share ke integrasi ini, jadi cukup satu
+  // pemanggilan (bukan navigasi bertingkat seperti Drive/GitHub).
+  async function loadNotionList(){
+    const el = document.getElementById('notionListContent');
+    el.innerHTML = repoBrowserStateHtml('loading', t('notion.loading'));
+
+    let data;
+    try {
+      data = await notionApi('/search', {
+        method: 'POST',
+        body: JSON.stringify({
+          sort: { direction: 'descending', timestamp: 'last_edited_time' },
+          page_size: 100,
+        }),
+      });
+    } catch(err){
+      el.innerHTML = repoBrowserStateHtml('error', notionBrowserErrorText(err.code));
+      return;
+    }
+
+    if(data.object === 'error'){
+      el.innerHTML = repoBrowserStateHtml('error', notionBrowserErrorText(data.status === 401 ? 'unauthorized' : 'generic'));
+      return;
+    }
+
+    const items = (data.results || []).filter(item => item.object === 'page' || item.object === 'database');
+    if(!items.length){
+      el.innerHTML = repoBrowserStateHtml('empty', t('notion.empty'));
+      return;
+    }
+
+    el.innerHTML = `<div class="repo-browser-list">${items.map(item => {
+      const isDb = item.object === 'database';
+      const name = notionItemTitle(item) || t('notion.untitled');
+      const sub = isDb ? t('notion.database') : t('notion.page');
+      const action = isDb
+        ? `openNotionDatabase('${escapeHtml(item.id)}','${escapeHtml(name).replace(/'/g, "\\'")}')`
+        : `openNotionPage('${escapeHtml(item.id)}','${escapeHtml(name).replace(/'/g, "\\'")}')`;
+      return `
+        <button class="repo-browser-item" onclick="${action}">
+          <div class="repo-browser-item-icon ${isDb ? 'dir' : ''}">${isDb ? databaseIconSvg() : docIconSvg()}</div>
+          <div class="repo-browser-item-body">
+            <div class="repo-browser-item-name">${escapeHtml(name)}</div>
+            <div class="repo-browser-item-sub">${sub}</div>
+          </div>
+        </button>
+      `;
+    }).join('')}</div>`;
+  }
+
+  // Judul halaman/database Notion tersimpan di properti bertipe 'title', tapi
+  // nama propertinya bisa berbeda-beda (biasanya "Name" atau "title") — jadi
+  // dicari propertinya yang punya type 'title', bukan diasumsikan namanya.
+  function notionItemTitle(item){
+    if(item.object === 'database'){
+      const rich = item.title || [];
+      return rich.map(t => t.plain_text).join('').trim();
+    }
+    const props = item.properties || {};
+    for(const key in props){
+      if(props[key].type === 'title'){
+        return (props[key].title || []).map(t => t.plain_text).join('').trim();
+      }
+    }
+    return '';
+  }
+
+  // Buka satu database: query semua row-nya dan tampilkan sebagai list
+  // (mirip folder), setiap row diklik untuk preview isinya sebagai halaman.
+  async function openNotionDatabase(id, name){
+    notionCurrentDatabase = { id, name };
+    showSheetPage('notionDatabaseRows');
+    document.getElementById('sheetTitle').textContent = name;
+    const crumbEl = document.getElementById('notionDatabaseBreadcrumb');
+    if(crumbEl) crumbEl.innerHTML = `<span class="crumb" onclick="showSheetPage('notionList')">Notion</span><span class="crumb-sep">/</span><span class="crumb">${escapeHtml(name)}</span>`;
+
+    const el = document.getElementById('notionDatabaseRowsContent');
+    el.innerHTML = repoBrowserStateHtml('loading', t('notion.loadingContents'));
+
+    let data;
+    try {
+      data = await notionApi(`/databases/${id}/query`, {
+        method: 'POST',
+        body: JSON.stringify({ page_size: 100 }),
+      });
+    } catch(err){
+      el.innerHTML = repoBrowserStateHtml('error', notionBrowserErrorText(err.code));
+      return;
+    }
+
+    if(data.object === 'error'){
+      el.innerHTML = repoBrowserStateHtml('error', notionBrowserErrorText(data.status === 401 ? 'unauthorized' : 'generic'));
+      return;
+    }
+
+    const rows = data.results || [];
+    if(!rows.length){
+      el.innerHTML = repoBrowserStateHtml('empty', t('notion.emptyDatabase'));
+      return;
+    }
+
+    el.innerHTML = `<div class="repo-browser-list">${rows.map(row => {
+      const rowName = notionItemTitle(row) || t('notion.untitled');
+      return `
+        <button class="repo-browser-item" onclick="openNotionPage('${escapeHtml(row.id)}','${escapeHtml(rowName).replace(/'/g, "\\'")}')">
+          <div class="repo-browser-item-icon">${docIconSvg()}</div>
+          <div class="repo-browser-item-body">
+            <div class="repo-browser-item-name">${escapeHtml(rowName)}</div>
+          </div>
+        </button>
+      `;
+    }).join('')}</div>`;
+  }
+
+  // Buka satu halaman: ambil semua block children lalu render jadi teks polos
+  // (paragraf, heading, bullet, dll) untuk dilampirkan sebagai konteks chat.
+  async function openNotionPage(id, name){
+    showSheetPage('notionFilePreview');
+    document.getElementById('sheetTitle').textContent = name;
+    const el = document.getElementById('notionFilePreviewContent');
+    el.innerHTML = repoBrowserStateHtml('loading', t('notion.loadingFile'));
+
+    let text;
+    try {
+      text = await fetchNotionPageText(id);
+    } catch(err){
+      el.innerHTML = repoBrowserStateHtml('error', notionBrowserErrorText(err.code));
+      return;
+    }
+
+    if(text === null){
+      el.innerHTML = repoBrowserStateHtml('error', t('notion.errorGeneric'));
+      return;
+    }
+
+    if(!text.trim()){
+      text = t('notion.emptyPage');
+    }
+    if(text.length > NOTION_TEXT_MAX_CHARS){
+      text = text.slice(0, NOTION_TEXT_MAX_CHARS);
+    }
+
+    notionBrowserPendingFile = { name, text, pageId: id };
+
+    el.innerHTML = `
+      <div class="repo-file-preview">
+        <div class="repo-file-preview-meta">${escapeHtml(name)}</div>
+        <div class="repo-file-preview-code">${escapeHtml(text)}</div>
+        <div class="repo-file-preview-actions">
+          <button onclick="window.open('https://notion.so/${id.replace(/-/g, '')}', '_blank', 'noopener')">${t('notion.viewInNotion')}</button>
+          <button class="primary" onclick="attachNotionFileToChat()">${t('notion.attachFile')}</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Ambil isi block satu halaman Notion secara rekursif (nested list/toggle dll),
+  // lalu diratakan jadi teks polos berbaris — cukup sederhana buat konteks chat.
+  async function fetchNotionPageText(blockId, depth){
+    depth = depth || 0;
+    if(depth > 4) return ''; // batasi kedalaman biar tidak infinite/berat
+
+    let data;
+    try {
+      data = await notionApi(`/blocks/${blockId}/children?page_size=100`);
+    } catch(err){
+      if(depth === 0) throw err;
+      return '';
+    }
+    if(!data || data.object === 'error') return depth === 0 ? null : '';
+
+    const lines = [];
+    for(const block of (data.results || [])){
+      const line = notionBlockToText(block);
+      if(line) lines.push('  '.repeat(depth) + line);
+      if(block.has_children){
+        const childText = await fetchNotionPageText(block.id, depth + 1);
+        if(childText) lines.push(childText);
+      }
+    }
+    return lines.join('\n');
+  }
+
+  // Konversi satu block Notion jadi satu baris teks, sesuai tipenya.
+  function notionBlockToText(block){
+    const richTextToPlain = (arr) => (arr || []).map(t => t.plain_text).join('');
+    const type = block.type;
+    const content = block[type];
+    if(!content) return '';
+
+    switch(type){
+      case 'paragraph': return richTextToPlain(content.rich_text);
+      case 'heading_1': return '# ' + richTextToPlain(content.rich_text);
+      case 'heading_2': return '## ' + richTextToPlain(content.rich_text);
+      case 'heading_3': return '### ' + richTextToPlain(content.rich_text);
+      case 'bulleted_list_item': return '• ' + richTextToPlain(content.rich_text);
+      case 'numbered_list_item': return '1. ' + richTextToPlain(content.rich_text);
+      case 'to_do': return `[${content.checked ? 'x' : ' '}] ` + richTextToPlain(content.rich_text);
+      case 'toggle': return richTextToPlain(content.rich_text);
+      case 'quote': return '> ' + richTextToPlain(content.rich_text);
+      case 'callout': return richTextToPlain(content.rich_text);
+      case 'code': return richTextToPlain(content.rich_text);
+      default: return '';
+    }
+  }
+
+  // Push halaman Notion yang sedang di-preview ke pendingAttachments, pola
+  // sama dengan attachRepoFileToChat()/attachDriveFileToChat().
+  function attachNotionFileToChat(){
+    if(!notionBrowserPendingFile) return;
+    pendingAttachments.push({
+      id: 'att' + (++attachCounter),
+      kind: 'file',
+      name: notionBrowserPendingFile.name,
+      mimeType: 'text/plain',
+      text: notionBrowserPendingFile.text
+    });
+    renderAttachPreview();
+    notionBrowserPendingFile = null;
+    closeAttachSheet();
+  }
 
   // State navigasi: repo yang sedang dibuka + jejak folder (breadcrumb) di dalamnya.
   let repoBrowserCurrentRepo = null; // { owner, name, private }
@@ -4920,7 +5282,7 @@
         ` : '';
         row.innerHTML = `
           <div class="msg-ai-col">
-            <div class="msg-bubble">${showPinwheel ? '<div class="typing-dots"><div class="loading-pinwheel">' + pinwheelLogoSvg() + '</div></div>' : (msg.error ? '<div class="error-note">' + escapeHtml(msg.text) + '</div>' : renderMarkdown(msg.text))}</div>
+            <div class="msg-bubble">${showPinwheel ? '<div class="typing-dots">' + (msg.toolStatus ? '<div class="tool-status-text">' + escapeHtml(msg.toolStatus) + '</div>' : '') + '<div class="loading-pinwheel">' + pinwheelLogoSvg() + '</div></div>' : (msg.error ? '<div class="error-note">' + escapeHtml(msg.text) + '</div>' : renderMarkdown(msg.text))}</div>
             ${actionsHtml}
           </div>
         `;
@@ -5019,7 +5381,7 @@
 
   // Instruksi khusus untuk turn deteksi tool-call: menjelaskan semua tool GitHub
   // yang tersedia (3 read-only + 1 tulis/push), tidak menggantikan system prompt utama.
-  const GITHUB_TOOL_SYSTEM_ADDENDUM = "PENTING — kamu WAJIB menggunakan tool berikut kapan pun relevan, JANGAN pernah menjawab dengan teks biasa yang menyarankan user membuka GitHub secara manual, memakai GitHub CLI, atau mengecek sendiri — kamu punya akses langsung lewat tool ini:\n1. list_github_repos — melihat daftar repository milik user. WAJIB panggil ini kalau user bertanya repo apa saja yang dia punya/miliki.\n2. list_github_directory — melihat isi sebuah folder (file & subfolder) di dalam repo tertentu. WAJIB panggil ini kalau user minta melihat isi repo/folder tertentu. Kalau path tidak disebutkan, kosongkan path (artinya root repo).\n3. read_github_file — membaca isi satu file teks di dalam repo. WAJIB panggil ini kalau user minta melihat/membaca isi sebuah file di GitHub.\n4. push_file_to_github — commit & push (buat baru atau menimpa) satu file ke repo. Panggil ini HANYA kalau user secara jelas meminta agar sesuatu di-push/di-commit/disimpan ke GitHub/repo.\n\nUntuk tool nomor 1-3: ini operasi baca saja yang aman, panggil langsung begitu maksud user jelas, TANPA perlu konfirmasi tambahan, dan TANPA bertanya balik ke user dulu.\nUntuk tool nomor 4 (push_file_to_github): ini mengubah isi repo, jadi kalau user meminta push tapi belum jelas nama repo (format owner+repo) atau nama file/path-nya, JANGAN memanggil fungsi ini — sebaliknya balas dengan teks biasa yang menanyakan repo dan path/nama file yang dimaksud. Kalau semua informasi sudah jelas, panggil dengan argumen lengkap termasuk 'confirmation_message': kalimat singkat berbahasa Indonesia yang santai untuk menanyakan persetujuan user sebelum push benar-benar dilakukan (misal: 'Aku akan commit & push file utils.js ke repo pinzz/codspire, setuju?').\n\nKalau owner/username GitHub tidak disebutkan user secara eksplisit untuk tool manapun, gunakan username GitHub milik user yang sedang terhubung (akan diberi tahu di bawah, kalau ada) sebagai default. Ingat: user SUDAH menghubungkan akun GitHub-nya ke Farvion, jadi kamu benar-benar punya akses — jangan pernah berperilaku seolah kamu tidak punya akses.";
+  const GITHUB_TOOL_SYSTEM_ADDENDUM = "ATURAN STATUS TEXT — SETIAP kali kamu memanggil salah satu tool di bawah (function call apapun), kamu WAJIB menyertakan SATU baris teks singkat (maksimal 6 kata, bahasa Indonesia, present tense/progresif, TANPA tanda kutip) sebagai bagian 'text' pada respons yang SAMA, tepat sebelum function call tersebut — ini akan ditampilkan ke user sebagai status \\\"sedang apa\\\" secara real-time (contoh: 'Melihat daftar repository...', 'Membuka folder src...', 'Membaca file utils.js...', 'Menyiapkan push ke GitHub...'). Buat teksnya spesifik sesuai argumen yang kamu kirim (nama repo/file/folder), JANGAN generic. Ini WAJIB dilakukan di setiap iterasi tool call, termasuk kalau kamu memanggil tool berkali-kali secara berurutan. JANGAN taruh teks status ini di dalam jawaban final (setelah semua tool selesai) — hanya di respons yang mengandung function call.\\n\\nPENTING — kamu WAJIB menggunakan tool berikut kapan pun relevan, JANGAN pernah menjawab dengan teks biasa yang menyarankan user membuka GitHub secara manual, memakai GitHub CLI, atau mengecek sendiri — kamu punya akses langsung lewat tool ini:\n1. list_github_repos — melihat daftar repository milik user. WAJIB panggil ini kalau user bertanya repo apa saja yang dia punya/miliki.\n2. list_github_directory — melihat isi sebuah folder (file & subfolder) di dalam repo tertentu. WAJIB panggil ini kalau user minta melihat isi repo/folder tertentu. Kalau path tidak disebutkan, kosongkan path (artinya root repo).\n3. read_github_file — membaca isi satu file teks di dalam repo. WAJIB panggil ini kalau user minta melihat/membaca isi sebuah file di GitHub.\n4. push_file_to_github — commit & push (buat baru atau menimpa) satu file ke repo. Panggil ini HANYA kalau user secara jelas meminta agar sesuatu di-push/di-commit/disimpan ke GitHub/repo.\n\nUntuk tool nomor 1-3: ini operasi baca saja yang aman, panggil langsung begitu maksud user jelas, TANPA perlu konfirmasi tambahan, dan TANPA bertanya balik ke user dulu.\nUntuk tool nomor 4 (push_file_to_github): ini mengubah isi repo, jadi kalau user meminta push tapi belum jelas nama repo (format owner+repo) atau nama file/path-nya, JANGAN memanggil fungsi ini — sebaliknya balas dengan teks biasa yang menanyakan repo dan path/nama file yang dimaksud. Kalau semua informasi sudah jelas, panggil dengan argumen lengkap termasuk 'confirmation_message': kalimat singkat berbahasa Indonesia yang santai untuk menanyakan persetujuan user sebelum push benar-benar dilakukan (misal: 'Aku akan commit & push file utils.js ke repo pinzz/codspire, setuju?').\n\nKalau owner/username GitHub tidak disebutkan user secara eksplisit untuk tool manapun, gunakan username GitHub milik user yang sedang terhubung (akan diberi tahu di bawah, kalau ada) sebagai default. Ingat: user SUDAH menghubungkan akun GitHub-nya ke Farvion, jadi kamu benar-benar punya akses — jangan pernah berperilaku seolah kamu tidak punya akses.";
 
   const GITHUB_LIST_REPOS_TOOL_DECLARATION = {
     name: 'list_github_repos',
@@ -5146,6 +5508,26 @@
   // konfirmasi user lewat modal (Iya/Tidak).
   let pendingGithubPushCall = null; // { args, conv, contents }
 
+  // Fallback teks status ("sedang ngapain") per nama tool GitHub, dipakai kalau
+  // Gemini tidak menyertakan teks status sendiri di respons function-call-nya
+  // (harusnya jarang terjadi karena sudah diinstruksikan di system addendum,
+  // tapi tetap perlu jaga-jaga supaya UI tidak kosong).
+  function githubToolStatusFallback(name, args){
+    const a = args || {};
+    switch(name){
+      case 'list_github_repos':
+        return 'Melihat daftar repository...';
+      case 'list_github_directory':
+        return a.path ? `Membuka folder "${a.path}"...` : `Membuka isi repo ${a.owner || ''}/${a.repo || ''}...`.trim();
+      case 'read_github_file':
+        return a.path ? `Membaca file "${a.path}"...` : 'Membaca file di GitHub...';
+      case 'push_file_to_github':
+        return a.path ? `Menyiapkan push "${a.path}"...` : 'Menyiapkan push ke GitHub...';
+      default:
+        return 'Menggunakan tool GitHub...';
+    }
+  }
+
   // Loop utama tool-calling GitHub: memanggil Gemini (non-stream) berulang kali
   // selama dia terus meminta tool read-only (list repo/folder, baca file), lalu
   // otomatis eksekusi dan kirim balik hasilnya. Kalau di tengah jalan Gemini
@@ -5205,6 +5587,25 @@
 
       const { name, args } = callPart.functionCall;
       const callArgs = args || {};
+
+      // Ambil teks status ("sedang ngapain") yang disisipkan Gemini bareng
+      // function call ini (sesuai instruksi di GITHUB_TOOL_SYSTEM_ADDENDUM).
+      // Kalau model tidak menyertakan teks apapun, pakai fallback template.
+      const statusTextRaw = parts
+        .filter(p => !p.functionCall && !p.thought && typeof p.text === 'string')
+        .map(p => p.text.trim())
+        .filter(Boolean)
+        .join(' ');
+      const toolStatus = statusTextRaw || githubToolStatusFallback(name, callArgs);
+
+      // Update bubble loading yang sedang tampil supaya menunjukkan status ini
+      // (pinwheel tetap berputar, teks shimmer muncul di bawahnya) sebelum tool
+      // benar-benar dieksekusi — biar user lihat progres real-time.
+      const loadingMsg = conv.messages.find(m => m.loading);
+      if(loadingMsg){
+        loadingMsg.toolStatus = toolStatus;
+        renderChat();
+      }
 
       if(name === 'push_file_to_github'){
         // Tool yang mengubah data — jangan dieksekusi otomatis, tampilkan modal dulu.
