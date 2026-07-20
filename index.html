@@ -2104,6 +2104,18 @@
           <button class="connector-connect-btn" id="connectorDriveConnectBtn" onclick="connectGoogleDrive()" data-i18n="connectors.connect">Hubungkan</button>
           <button class="connector-disconnect-btn" id="connectorDriveDisconnectBtn" onclick="disconnectGoogleDrive()" style="display:none;" data-i18n="connectors.disconnect">Putuskan</button>
         </div>
+
+        <div class="connector-item" id="connectorItemNotion">
+          <div class="connector-item-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 8h10M7 12h10M7 16h6" stroke-width="1.8" stroke-linecap="round"/><rect x="3.5" y="3.5" width="17" height="17" rx="2" fill="none" stroke-width="1.8"/></svg>
+          </div>
+          <div class="connector-item-body">
+            <div class="connector-item-name">Notion</div>
+            <div class="connector-item-status" id="connectorNotionStatus" data-i18n="connectors.notConnected">Belum terhubung</div>
+          </div>
+          <button class="connector-connect-btn" id="connectorNotionConnectBtn" onclick="connectNotion()" data-i18n="connectors.connect">Hubungkan</button>
+          <button class="connector-disconnect-btn" id="connectorNotionDisconnectBtn" onclick="disconnectNotion()" style="display:none;" data-i18n="connectors.disconnect">Putuskan</button>
+        </div>
       </div>
     </div>
 
@@ -3255,6 +3267,8 @@
 
     // Google Drive punya elemen status/tombolnya sendiri di direktori — disinkronkan terpisah.
     refreshDriveConnectorUI();
+    // Notion sama — elemen status/tombolnya sendiri, disinkronkan terpisah juga.
+    refreshNotionConnectorUI();
 
     // --- halaman "Konektor" (list gabungan yang sudah terhubung / empty-state) ---
     const driveToken = localStorage.getItem(DRIVE_ACCESS_TOKEN_KEY);
@@ -3785,6 +3799,128 @@
     closeAttachSheet();
   }
 
+  // ====== KONEKTOR: Notion (OAuth, access_token tidak pernah expire) ======
+  const NOTION_ACCESS_TOKEN_KEY = 'farvion_notion_access_token';
+  const NOTION_WORKSPACE_NAME_KEY = 'farvion_notion_workspace_name';
+  const NOTION_CLIENT_ID = '3a3d872b-594c-818d-b8bb-003744d83186';
+  const NOTION_TOKEN_EXCHANGE_URL = 'https://farvion-notion-oauth.alfinpinzz6.workers.dev';
+  // Sama seperti GitHub & Drive: Farvion static site, callback diarahkan balik ke halaman ini sendiri.
+  const NOTION_REDIRECT_URI = window.location.origin + window.location.pathname;
+
+  function refreshNotionConnectorUI(){
+    const token = localStorage.getItem(NOTION_ACCESS_TOKEN_KEY);
+    const workspaceName = localStorage.getItem(NOTION_WORKSPACE_NAME_KEY);
+    const isConnected = !!token;
+
+    const statusEl = document.getElementById('connectorNotionStatus');
+    const connectBtn = document.getElementById('connectorNotionConnectBtn');
+    const disconnectBtn = document.getElementById('connectorNotionDisconnectBtn');
+
+    if(statusEl){
+      if(isConnected){
+        statusEl.textContent = workspaceName ? `${t('connectors.connectedAs')} ${workspaceName}` : t('connectors.connected');
+        statusEl.classList.add('connected');
+        connectBtn.style.display = 'none';
+        disconnectBtn.style.display = 'inline-flex';
+      } else {
+        statusEl.textContent = t('connectors.notConnected');
+        statusEl.classList.remove('connected');
+        connectBtn.style.display = 'inline-flex';
+        disconnectBtn.style.display = 'none';
+      }
+    }
+  }
+
+  function connectNotion(){
+    const params = new URLSearchParams({
+      client_id: NOTION_CLIENT_ID,
+      redirect_uri: NOTION_REDIRECT_URI,
+      response_type: 'code',
+      owner: 'user',
+      state: 'farvion_notion_oauth',
+    });
+    window.location.href = `https://api.notion.com/v1/oauth/authorize?${params.toString()}`;
+  }
+
+  function disconnectNotion(){
+    localStorage.removeItem(NOTION_ACCESS_TOKEN_KEY);
+    localStorage.removeItem(NOTION_WORKSPACE_NAME_KEY);
+    refreshNotionConnectorUI();
+  }
+
+  // Dipanggil sekali saat halaman dimuat: kalau URL mengandung ?code=...&state=farvion_notion_oauth
+  // berarti kita baru saja diarahkan balik oleh Notion setelah user menyetujui otorisasi.
+  async function handleNotionCallback(){
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const state = params.get('state');
+    if(!code || state !== 'farvion_notion_oauth') return;
+
+    // Bersihkan ?code=...&state=... dari address bar supaya tidak tertukar lagi kalau di-refresh
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    const connectBtn = document.getElementById('connectorNotionConnectBtn');
+    if(connectBtn){
+      connectBtn.textContent = t('drive.connecting');
+      connectBtn.disabled = true;
+    }
+
+    try {
+      const res = await fetch(NOTION_TOKEN_EXCHANGE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, redirect_uri: NOTION_REDIRECT_URI }),
+      });
+      const data = await res.json();
+
+      if(data.error){
+        alert(t('connectors.oauthFailed') + ' (' + data.error + ')');
+        return;
+      }
+
+      localStorage.setItem(NOTION_ACCESS_TOKEN_KEY, data.access_token);
+      if(data.workspace_name) localStorage.setItem(NOTION_WORKSPACE_NAME_KEY, data.workspace_name);
+      refreshNotionConnectorUI();
+
+      openAttachSheet();
+      showSheetPage('connectors');
+    } catch(err){
+      alert(t('connectors.oauthFailed'));
+    } finally {
+      if(connectBtn){
+        connectBtn.textContent = t('connectors.connect');
+        connectBtn.disabled = false;
+      }
+    }
+  }
+
+  // Wrapper fetch ke Notion API pakai token yang sudah tersimpan.
+  // Notion mewajibkan header Notion-Version di setiap request.
+  async function notionApi(path, options){
+    const token = localStorage.getItem(NOTION_ACCESS_TOKEN_KEY);
+    if(!token){
+      const err = new Error('notion_not_connected');
+      err.code = 'unauthorized';
+      throw err;
+    }
+    const res = await fetch(`https://api.notion.com/v1${path}`, {
+      ...(options || {}),
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Notion-Version': '2022-06-28',
+        'Content-Type': 'application/json',
+        ...((options && options.headers) || {}),
+      },
+    });
+    if(res.status === 401){
+      disconnectNotion();
+      const err = new Error('notion_unauthorized');
+      err.code = 'unauthorized';
+      throw err;
+    }
+    return res.json();
+  }
+
 
   // State navigasi: repo yang sedang dibuka + jejak folder (breadcrumb) di dalamnya.
   let repoBrowserCurrentRepo = null; // { owner, name, private }
@@ -4052,6 +4188,7 @@
   refreshConnectorUI();
   handleGithubCallback();
   handleGoogleDriveCallback();
+  handleNotionCallback();
 
   // Drag dari mana saja di badan sheet (bukan cuma handle-nya): support touch & mouse
   let sheetDragStartY = 0;
