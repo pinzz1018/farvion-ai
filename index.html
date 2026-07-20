@@ -2725,12 +2725,18 @@
             if(currentConvId === id) currentConvId = null;
           } else {
             const data = change.doc.data();
+            const local = conversations[id];
             // Jangan timpa percakapan yang sedang aktif kalau ada pesan yang masih
             // loading/streaming secara lokal — itu tandanya kita sedang di tengah
             // menerima jawaban AI dan versi lokal lebih baru daripada versi server.
-            const local = conversations[id];
             const localIsBusy = local && local.messages.some(m => m.loading || m.streaming);
             if(localIsBusy) return;
+            // Jangan timpa chat kosong yang sedang aktif (New Chat yang belum diisi
+            // user) — kalau ada ID lama yang kebetulan sama, biarkan tampilan tetap
+            // New Chat kosong; data cloud tetap tersimpan di object tapi bukan yang aktif.
+            if(id === currentConvId && local && local.messages.length === 0 && (data.messages||[]).length > 0){
+              return;
+            }
             conversations[id] = {
               title: data.title || t('newChatTitle'),
               messages: data.messages || [],
@@ -3888,8 +3894,9 @@
       closeSidebar();
       return;
     }
-    convCounter++;
-    const id = 'c' + convCounter;
+    // ID unik global (bukan counter lokal) supaya tidak bentrok dengan percakapan
+    // yang dibuat dari device/sesi lain yang login ke akun yang sama.
+    const id = 'c' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     conversations[id] = { title: t('newChatTitle'), messages: [] };
     currentConvId = id;
     renderHistory();
