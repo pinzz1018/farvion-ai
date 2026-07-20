@@ -2680,6 +2680,7 @@
       showApp();
       updateGreeting();
       loadConversationsFromCloud(user.uid);
+      loadApiKeyFromCloud(user.uid);
     } else {
       currentUser = null;
       userName = '';
@@ -2935,6 +2936,17 @@
     document.getElementById('keyModal').classList.add('visible');
     document.getElementById('apiKeyInput').value = apiKey;
     document.getElementById('apiKeyInput').focus();
+    // Diagnostik ringan: tes langsung apakah localStorage benar-benar bisa
+    // menyimpan & membaca balik nilai di browser ini, tanpa perlu buka console.
+    try{
+      const testKey = '__farvion_ls_test__';
+      localStorage.setItem(testKey, '1');
+      const ok = localStorage.getItem(testKey) === '1';
+      localStorage.removeItem(testKey);
+      console.log('[Farvion][DEBUG] Tes localStorage saat buka modal:', ok ? 'BERHASIL' : 'GAGAL (tersimpan tapi tidak bisa dibaca balik)');
+    } catch(e){
+      console.error('[Farvion][DEBUG] Tes localStorage saat buka modal: GAGAL total —', e.name, e.message);
+    }
   }
   function closeKeyModal(){
     document.getElementById('keyModal').classList.remove('visible');
@@ -2943,23 +2955,56 @@
     const val = document.getElementById('apiKeyInput').value.trim();
     if(!val){ closeKeyModal(); return; }
     apiKey = val;
+    // localStorage tetap dipakai sebagai cache cepat (biar tidak perlu tunggu
+    // network saat buka app), tapi sumber utamanya sekarang Firestore — supaya
+    // key tetap ada walau localStorage/cookie dihapus user lewat "Hapus data
+    // penjelajahan" di Chrome, selama masih login ke akun Google yang sama.
     try{
       localStorage.setItem('farvion_gemini_api_key', apiKey);
-      // Verifikasi langsung: baca lagi untuk memastikan benar-benar tersimpan
-      // (di beberapa browser/mode, write bisa "berhasil" tanpa error tapi tidak persisten).
-      const check = localStorage.getItem('farvion_gemini_api_key');
-      if(check !== apiKey){
-        console.warn('[Farvion] localStorage tidak persisten — key mungkin hilang setelah refresh.');
-      }
     } catch(e){
-      console.error('[Farvion] Gagal simpan API key ke localStorage:', e);
-      alert(t('errors.apiKeyStorageFailed'));
+      console.warn('[Farvion] Gagal simpan API key ke localStorage (cache lokal); tetap lanjut simpan ke cloud:', e);
     }
+    saveApiKeyToCloud(apiKey);
     document.getElementById('statusDot').className = 'dot on';
     document.getElementById('statusText').textContent = t('sidebar.apiKeyReady');
     document.getElementById('statusText').removeAttribute('data-i18n');
     document.getElementById('sendBtn').disabled = false;
     closeKeyModal();
+  }
+
+  // Simpan API key ke Firestore, terikat ke akun Google user, supaya tahan
+  // terhadap "Hapus data penjelajahan" dan otomatis tersedia di device lain
+  // yang login ke akun yang sama.
+  function saveApiKeyToCloud(key){
+    if(!currentUser) return; // belum login — nanti tersimpan ke cloud begitu login
+    db.collection('users').doc(currentUser.uid).collection('settings').doc('apiKey')
+      .set({ value: key, updatedAt: Date.now() })
+      .catch(err => {
+        console.error('[Farvion] Gagal simpan API key ke Firestore:', err);
+        alert(t('errors.apiKeyStorageFailed'));
+      });
+  }
+
+  // Muat API key dari Firestore (sumber utama). Dipanggil saat login.
+  function loadApiKeyFromCloud(uid){
+    db.collection('users').doc(uid).collection('settings').doc('apiKey').get()
+      .then(doc => {
+        if(doc.exists && doc.data().value){
+          apiKey = doc.data().value;
+          try{ localStorage.setItem('farvion_gemini_api_key', apiKey); } catch(e){ /* cache saja, boleh gagal */ }
+          document.getElementById('statusDot').className = 'dot on';
+          document.getElementById('statusText').textContent = t('sidebar.apiKeyReady');
+          document.getElementById('statusText').removeAttribute('data-i18n');
+          document.getElementById('sendBtn').disabled = false;
+        } else if(apiKey){
+          // Tidak ada di cloud tapi ada di localStorage (mis. dari sebelum fitur ini
+          // ada) — upload sekali supaya ke depannya tersinkron dan tahan hapus-data.
+          saveApiKeyToCloud(apiKey);
+        }
+      })
+      .catch(err => {
+        console.error('[Farvion] Gagal memuat API key dari Firestore, pakai cache lokal (kalau ada):', err);
+      });
   }
 
   // ====== BOTTOM SHEET (tombol + di composer) ======
@@ -3907,15 +3952,17 @@
   function renderHistory(){
     const list = document.getElementById('historyList');
     list.innerHTML = '';
-    Object.keys(conversations).reverse().forEach(id => {
-      const conv = conversations[id];
-      if(conv.messages.length === 0) return; // jangan tampilkan chat kosong di riwayat
-      const div = document.createElement('div');
-      div.className = 'history-item' + (id === currentConvId ? ' active' : '');
-      div.textContent = conv.title;
-      div.onclick = () => { currentConvId = id; renderHistory(); renderChat(); closeSidebar(); };
-      list.appendChild(div);
-    });
+    Object.keys(conversations)
+      .filter(id => conversations[id].messages.length > 0) // jangan tampilkan chat kosong di riwayat
+      .sort((a, b) => (conversations[b].updatedAt || 0) - (conversations[a].updatedAt || 0)) // terbaru di atas
+      .forEach(id => {
+        const conv = conversations[id];
+        const div = document.createElement('div');
+        div.className = 'history-item' + (id === currentConvId ? ' active' : '');
+        div.textContent = conv.title;
+        div.onclick = () => { currentConvId = id; renderHistory(); renderChat(); closeSidebar(); };
+        list.appendChild(div);
+      });
   }
 
   // ====== TOAST (mis. "Disalin" setelah copy) ======
@@ -4330,6 +4377,7 @@
       conv.title = conv.title.length > 32 ? conv.title.slice(0,32) + '…' : conv.title;
     }
 
+    conv.updatedAt = Date.now();
     conv.messages.push({ role:'user', text, attachments });
     input.value = '';
     pendingAttachments = [];
@@ -5029,7 +5077,10 @@
   // (applyLanguage sudah dipanggil lebih awal, sesaat setelah TRANSLATIONS didefinisikan,
   // supaya tidak ada kilatan teks default Bahasa Indonesia sebelum bahasa asli diterapkan)
 
-  // Muat API key yang tersimpan di perangkat ini, kalau ada
+  // Muat API key yang tersimpan di perangkat ini (cache lokal), kalau ada.
+  // Ini hanya untuk tampilan instan sebelum Firestore selesai load; begitu
+  // login, loadApiKeyFromCloud() akan menimpa dengan versi cloud yang lebih
+  // otoritatif (tahan terhadap "Hapus data penjelajahan" di browser).
   (function loadSavedApiKey(){
     let saved = null;
     try{
@@ -5044,6 +5095,7 @@
       document.getElementById('statusText').textContent = t('sidebar.apiKeyReady');
       document.getElementById('statusText').removeAttribute('data-i18n');
       document.getElementById('sendBtn').disabled = false;
+      console.log('[Farvion][DEBUG] apiKey berhasil dipulihkan, panjang:', apiKey.length);
     } else {
       console.log('[Farvion] Tidak ada API key tersimpan di localStorage.');
     }
