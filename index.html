@@ -1342,6 +1342,10 @@
     color: var(--terracotta-deep);
     display:flex;
     flex-shrink:0;
+    visibility: hidden; /* default: sembunyi, cuma opsi .active yang nampilin centang */
+  }
+  .model-option.active .model-option-check{
+    visibility: visible;
   }
 
   /* ==== Header sheet: tombol back (sub-halaman) & tombol aksi kanan ==== */
@@ -6120,8 +6124,8 @@
   // sebagai key penyimpanan & lookup, "label" yang tampil ke user (branding
   // Farvion), "underlyingModel" adalah model Gemini asli yang benar-benar dipanggil.
   const FARVION_CHAT_MODELS = {
-    'farvion-nova-1.0': { label: 'Farvion Nova 1.0', underlyingModel: 'gemini-3.5-flash' },
-    'farvion-1.0-flash': { label: 'Farvion 1.0 Flash', underlyingModel: 'gemini-2.5-flash' }
+    'farvion-nova-1.0': { label: 'Farvion Nova 1.0', underlyingModel: 'gemini-3.5-flash', supportsThinkingConfig: true },
+    'farvion-1.0-flash': { label: 'Farvion 1.0 Flash', underlyingModel: 'gemini-2.5-flash', supportsThinkingConfig: false }
   };
   const DEFAULT_FARVION_CHAT_MODEL_ID = 'farvion-nova-1.0';
 
@@ -6136,6 +6140,11 @@
   function getGeminiChatModel(){
     const entry = FARVION_CHAT_MODELS[selectedFarvionModelId] || FARVION_CHAT_MODELS[DEFAULT_FARVION_CHAT_MODEL_ID];
     return entry.underlyingModel;
+  }
+
+  function currentModelSupportsThinkingConfig(){
+    const entry = FARVION_CHAT_MODELS[selectedFarvionModelId] || FARVION_CHAT_MODELS[DEFAULT_FARVION_CHAT_MODEL_ID];
+    return !!entry.supportsThinkingConfig;
   }
 
   function selectFarvionModel(modelId){
@@ -6774,18 +6783,22 @@
     const maxAttempts = 3;
     for(let attempt = 0; attempt < maxAttempts; attempt++){
       try {
+        const requestBody = {
+          contents,
+          systemInstruction: { parts: [{ text: systemPrompt }] }
+        };
+        // thinkingConfig cuma didukung sebagian model (mis. gemini-3.5-flash).
+        // Mengirimnya ke model yang tidak mendukung (mis. gemini-2.5-flash)
+        // bikin Gemini balas 400 INVALID_ARGUMENT "Thinking level is not supported".
+        if(currentModelSupportsThinkingConfig()){
+          requestBody.generationConfig = { thinkingConfig: { thinkingLevel: 'low' } };
+        }
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${getGeminiChatModel()}:streamGenerateContent?alt=sse`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-            body: JSON.stringify({
-              contents,
-              systemInstruction: { parts: [{ text: systemPrompt }] },
-              generationConfig: {
-                thinkingConfig: { thinkingLevel: 'low' }
-              }
-            })
+            body: JSON.stringify(requestBody)
           }
         );
         if(res.ok){
