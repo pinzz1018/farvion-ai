@@ -6323,7 +6323,8 @@
         // tampilkan apa yang sudah didapat, dibingkai sebagai jawaban yang
         // tetap membantu — bukan pesan error teknis.
         if(usedAnyTool){
-          finishGithubToolConversation(conv, t('errors.geminiGeneric'));
+          FARVION_DEBUG_LOG.push('Gagal di iterasi LANJUTAN (setelah tool dipakai). status=' + result.status);
+          finishGithubToolConversation(conv, '🔧 DEBUG (sementara):\n' + FARVION_DEBUG_LOG.map((l, i) => (i+1) + '. ' + l).join('\n') + '\n\n' + t('errors.geminiGeneric'));
           return true;
         }
         // Belum sempat pakai tool sama sekali — lanjutkan ke jalur streaming
@@ -6409,6 +6410,8 @@
       const resultText = NOTION_READONLY_TOOL_NAMES.has(name)
         ? await executeNotionReadonlyTool(name, callArgs)
         : await executeGithubReadonlyTool(name, callArgs);
+
+      FARVION_DEBUG_LOG.push('tool="' + name + '" dieksekusi, resultText (panjang ' + (resultText ? resultText.length : 0) + '): ' + (resultText ? resultText.slice(0, 300) : '(kosong)'));
 
       // Tandai langkah ini selesai di toolHistory (untuk ditampilkan di modal detail).
       if(loadingMsg && loadingMsg.toolHistory && loadingMsg.toolHistory.length){
