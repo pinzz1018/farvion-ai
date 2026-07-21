@@ -669,16 +669,20 @@
   .tool-detail-overlay{
     position:fixed; inset:0;
     background: rgba(43,38,32,0);
-    display:none;
+    visibility: hidden;
+    opacity: 0;
+    display:flex;
     align-items:center; justify-content:center;
     z-index: 200;
     padding: 24px;
-    transition: background 0.24s ease;
+    transition: background 0.26s ease, opacity 0.26s ease, visibility 0s linear 0.26s;
   }
   .tool-detail-overlay.visible{
-    display:flex;
+    visibility: visible;
+    opacity: 1;
     background: rgba(43,38,32,0.38);
     backdrop-filter: blur(2px);
+    transition: background 0.26s ease, opacity 0.26s ease, visibility 0s linear 0s;
   }
   .tool-detail-card{
     background: var(--paper);
@@ -5477,7 +5481,16 @@
     }
 
     renderToolDetailList();
-    overlay.classList.add('visible');
+    // classList.add dijalankan lewat double rAF supaya browser sempat
+    // "commit" state awal overlay (opacity:0, card scale:0.82) di satu frame,
+    // baru transisi ke state akhir dimulai di frame berikutnya — kalau
+    // langsung ditambahkan di frame yang sama, browser bisa melewati animasi
+    // dan modal terlihat "muncul instan" tanpa efek pop/fade.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        overlay.classList.add('visible');
+      });
+    });
 
     // Kalau pesan yang lagi dibuka detailnya masih loading (tool masih
     // berjalan), refresh isi modal berkala supaya user lihat progres live
@@ -5631,7 +5644,7 @@
         ` : '';
         row.innerHTML = `
           <div class="msg-ai-col">
-            <div class="msg-bubble">${showPinwheel ? '<div class="typing-dots">' + (msg.toolStatus ? '<button type="button" class="tool-status-row" onclick="openToolDetailModal(' + msgIndex + ', this)"><div class="tool-status-icon">' + toolIconSvg(msg.toolName) + '</div><div class="tool-status-text">' + escapeHtml(msg.toolStatus) + '</div></button>' : '') + '<div class="loading-pinwheel">' + pinwheelLogoSvg() + '</div></div>' : (msg.error ? '<div class="error-note">' + escapeHtml(msg.text) + '</div>' : (msg.toolHistory && msg.toolHistory.length ? '<button type="button" class="tool-status-row tool-status-row-done" onclick="openToolDetailModal(' + msgIndex + ', this)"><div class="tool-status-icon">' + toolIconSvg(msg.toolHistory[msg.toolHistory.length-1].tool) + '</div><div class="tool-status-text tool-status-text-done">' + (msg.toolHistory.length === 1 ? t('tools.usedToolsSingle') : t('tools.usedTools').replace('{count}', msg.toolHistory.length)) + '</div></button>' : '') + renderMarkdown(msg.text))}</div>
+            <div class="msg-bubble">${showPinwheel ? '<div class="typing-dots">' + (msg.toolStatus ? '<button type="button" class="tool-status-row" onclick="openToolDetailModal(' + msgIndex + ', this)"><div class="tool-status-icon">' + toolIconSvg(msg.toolName) + '</div><div class="tool-status-text">' + escapeHtml(msg.toolStatus) + '</div></button>' : '') + '<div class="loading-pinwheel">' + pinwheelLogoSvg() + '</div></div>' : (msg.error ? '<div class="error-note">' + escapeHtml(msg.text) + '</div>' : (msg.toolHistory && msg.toolHistory.length ? '<button type="button" class="tool-status-row tool-status-row-done" onclick="openToolDetailModal(' + msgIndex + ', this)"><div class="tool-status-icon">' + toolIconSvg(msg.toolHistory[msg.toolHistory.length-1].tool) + '</div><div class="tool-status-text tool-status-text-done">' + escapeHtml(msg.toolHistory[msg.toolHistory.length-1].status) + '</div></button>' : '') + renderMarkdown(msg.text))}</div>
             ${actionsHtml}
           </div>
         `;
@@ -6371,7 +6384,17 @@
     if(!lastRow) return;
     const bubble = lastRow.querySelector('.msg-bubble');
     if(!bubble) return;
-    bubble.innerHTML = renderMarkdown(typingDisplayed);
+    // Kalau pesan ini punya riwayat tool (msg.toolHistory), pertahankan pill
+    // statusnya tetap tampil di atas teks jawaban selama proses ngetik
+    // berlangsung — supaya pill tidak "berkedip hilang" lalu muncul lagi
+    // cuma karena bubble di-innerHTML ulang tiap tick pengetikan.
+    const msgIndex = parseInt(lastRow.getAttribute('data-msg-index'), 10);
+    const conv = currentConvId ? conversations[currentConvId] : null;
+    const msg = conv && !isNaN(msgIndex) ? conv.messages[msgIndex] : null;
+    const toolPillHtml = (msg && msg.toolHistory && msg.toolHistory.length)
+      ? '<button type="button" class="tool-status-row tool-status-row-done" onclick="openToolDetailModal(' + msgIndex + ', this)"><div class="tool-status-icon">' + toolIconSvg(msg.toolHistory[msg.toolHistory.length-1].tool) + '</div><div class="tool-status-text tool-status-text-done">' + escapeHtml(msg.toolHistory[msg.toolHistory.length-1].status) + '</div></button>'
+      : '';
+    bubble.innerHTML = toolPillHtml + renderMarkdown(typingDisplayed);
     const scroll = document.getElementById('chatScroll');
     scroll.scrollTop = scroll.scrollHeight;
   }
