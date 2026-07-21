@@ -1949,6 +1949,7 @@
     padding: 16px 18px;
     border-bottom: 1px solid var(--line);
     flex-shrink:0;
+    position: relative;
   }
   .fullscreen-back-btn{
     width: 34px; height:34px;
@@ -1966,7 +1967,47 @@
     font-size: 19px;
     font-weight: 600;
     color: var(--ink);
+    flex:1;
   }
+  .legal-info-btn{
+    width: 34px; height:34px;
+    border-radius: 50%;
+    border:none;
+    background:transparent;
+    color: var(--ink-soft);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .legal-info-btn:hover{ background: rgba(43,38,32,0.06); color: var(--ink); }
+  .legal-info-btn svg{ width:19px; height:19px; }
+  .legal-info-menu{
+    position:absolute;
+    top: calc(100% + 4px);
+    right: 12px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(43,38,32,0.14);
+    padding: 6px;
+    min-width: 220px;
+    display:none;
+    flex-direction:column;
+    z-index: 50;
+  }
+  .legal-info-menu.open{ display:flex; }
+  .legal-info-item{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding: 11px 12px;
+    border-radius: 9px;
+    background:none; border:none; text-align:left; width:100%;
+    font-family:'Inter', sans-serif;
+    font-size: 14px; font-weight:500;
+    color: var(--ink);
+    cursor:pointer;
+  }
+  .legal-info-item:hover{ background: var(--cream-2); }
+  .legal-info-item svg{ width:15px; height:15px; color: var(--ink-soft); flex-shrink:0; }
   .fullscreen-body{
     flex:1;
     overflow-y:auto;
@@ -2111,6 +2152,19 @@
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
       <div class="fullscreen-title" data-i18n="settings.title">Pengaturan</div>
+      <button class="legal-info-btn" id="legalInfoBtn" onclick="event.stopPropagation(); toggleLegalInfoMenu()" aria-label="Info legal" data-i18n-aria="a11y.legalInfo" data-i18n-title="a11y.legalInfo" title="Info legal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+      </button>
+      <div class="legal-info-menu" id="legalInfoMenu">
+        <button class="legal-info-item" onclick="window.open('Terms of Service.html','_blank'); closeLegalInfoMenu();">
+          <span data-i18n="settings.tos">Ketentuan Layanan</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </button>
+        <button class="legal-info-item" onclick="window.open('Privacy Policy.html','_blank'); closeLegalInfoMenu();">
+          <span data-i18n="settings.privacy">Kebijakan Privasi</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </button>
+      </div>
     </div>
     <div class="fullscreen-body">
       <button class="settings-menu-item" onclick="openLanguagePage()">
@@ -2676,6 +2730,8 @@
       'settings.title': 'Pengaturan',
       'settings.language': 'Pilih bahasa',
       'settings.logout': 'Keluar',
+      'settings.tos': 'Ketentuan Layanan',
+      'settings.privacy': 'Kebijakan Privasi',
       'newChatTitle': 'Percakapan baru',
       'composer.placeholderReply': 'Balas Farvion...',
       'a11y.closeSidebar': 'Tutup sidebar',
@@ -2688,6 +2744,7 @@
       'a11y.pickPhoto': 'Pilih foto dari galeri',
       'a11y.attachFile': 'Lampirkan file teks (.txt/.js/.py, dll)',
       'a11y.manageConnectors': 'Kelola konektor',
+      'a11y.legalInfo': 'Info legal',
       'a11y.removeAttachment': 'Hapus lampiran',
       'errors.loginFailed': 'Gagal masuk',
       'errors.geminiGeneric': 'Lagi ada gangguan koneksi ke AI nih, coba kirim ulang pesannya ya.',
@@ -2827,6 +2884,8 @@
       'settings.title': 'Settings',
       'settings.language': 'Select language',
       'settings.logout': 'Logout',
+      'settings.tos': 'Terms of Service',
+      'settings.privacy': 'Privacy Policy',
       'newChatTitle': 'New chat',
       'composer.placeholderReply': 'Reply to Farvion...',
       'a11y.closeSidebar': 'Close sidebar',
@@ -2839,6 +2898,7 @@
       'a11y.pickPhoto': 'Choose a photo from gallery',
       'a11y.attachFile': 'Attach a text file (.txt/.js/.py, etc.)',
       'a11y.manageConnectors': 'Manage connectors',
+      'a11y.legalInfo': 'Legal info',
       'a11y.removeAttachment': 'Remove attachment',
       'errors.loginFailed': 'Sign-in failed',
       'errors.geminiGeneric': 'Having trouble connecting to the AI right now — try sending your message again.',
@@ -2907,7 +2967,21 @@
   }
   function closeSettingsPage(){
     document.getElementById('settingsPage').classList.remove('visible');
+    closeLegalInfoMenu();
   }
+  function toggleLegalInfoMenu(){
+    document.getElementById('legalInfoMenu').classList.toggle('open');
+  }
+  function closeLegalInfoMenu(){
+    document.getElementById('legalInfoMenu').classList.remove('open');
+  }
+  document.addEventListener('click', (e) => {
+    const menu = document.getElementById('legalInfoMenu');
+    const btn = document.getElementById('legalInfoBtn');
+    if(menu && menu.classList.contains('open') && !menu.contains(e.target) && e.target !== btn){
+      closeLegalInfoMenu();
+    }
+  });
   function openLanguagePage(){
     document.getElementById('languagePage').classList.add('visible');
     refreshTexts();
@@ -2963,6 +3037,13 @@
 
   let currentUser = null;
 
+  // Key sessionStorage untuk menandai "baru saja pergi ke redirect Google
+  // sign-in". Dipakai untuk mendeteksi kasus stuck: redirect berhasil pergi &
+  // balik, tapi Firebase gagal memulihkan sesi (biasanya storage/cookie
+  // lintas domain ke authDomain diblokir browser) sehingga user tetap
+  // nyangkut di layar login tanpa pesan error apapun.
+  const FARVION_REDIRECT_FLAG = 'farvion_pending_google_redirect';
+
   function isMobileBrowser(){
     return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   }
@@ -2978,6 +3059,15 @@
     // UI macet permanen di teks loading. Redirect jauh lebih reliable untuk
     // mobile, jadi langsung pakai itu tanpa mencoba popup dulu.
     if(isMobileBrowser()){
+      // Tandai di sessionStorage bahwa kita akan pergi ke redirect Google.
+      // Flag ini dibaca lagi setelah reload (lihat FARVION_REDIRECT_FLAG di
+      // bawah) untuk mendeteksi kasus "sudah balik dari Google tapi auth state
+      // tetap kosong" — yaitu saat redirect-nya sendiri berhasil (user sempat
+      // pilih akun di Google) tapi Firebase gagal membaca kembali state
+      // pending-nya sesudah kembali ke domain app (biasanya karena browser
+      // memblokir storage/cookie lintas domain ke authDomain Firebase).
+      try { sessionStorage.setItem(FARVION_REDIRECT_FLAG, String(Date.now())); } catch(e){}
+
       // Watchdog: kalau dalam 6 detik browser belum benar-benar berpindah
       // halaman (redirect ke Google), kemungkinan besar signInWithRedirect
       // gagal secara diam-diam (tanpa promise reject maupun throw) — biasanya
@@ -3043,9 +3133,39 @@
   // Cek hasil redirect (kalau baru saja kembali dari Google sign-in via fallback redirect)
   auth.getRedirectResult().then(result => {
     if(result && result.user){
-      // berhasil — onAuthStateChanged di bawah akan menangani tampilan
+      // berhasil — bersihkan flag, onAuthStateChanged di bawah akan menangani tampilan
+      try { sessionStorage.removeItem(FARVION_REDIRECT_FLAG); } catch(e){}
     }
-  }).catch(showAuthError);
+  }).catch(err => {
+    try { sessionStorage.removeItem(FARVION_REDIRECT_FLAG); } catch(e){}
+    showAuthError(err);
+  });
+
+  // Deteksi kasus "stuck setelah kembali dari redirect Google": kalau flag
+  // FARVION_REDIRECT_FLAG masih ada (artinya sebelumnya kita memang baru saja
+  // pergi ke signInWithRedirect) tapi setelah beberapa detik auth state tetap
+  // kosong (getRedirectResult() resolve tanpa user, TANPA error apapun —
+  // silent fail, biasanya karena browser memblokir storage/cookie lintas
+  // domain ke authDomain Firebase saat kembali ke domain app), tampilkan
+  // pesan error yang jelas ke user alih-alih diam selamanya di layar login.
+  // Delay 2.5 detik dikasih supaya onAuthStateChanged / getRedirectResult
+  // normal sempat selesai dulu kalau memang berhasil.
+  (function checkStuckAfterRedirect(){
+    let pendingFlag;
+    try { pendingFlag = sessionStorage.getItem(FARVION_REDIRECT_FLAG); } catch(e){ pendingFlag = null; }
+    if(!pendingFlag) return;
+    setTimeout(() => {
+      let stillPending;
+      try { stillPending = sessionStorage.getItem(FARVION_REDIRECT_FLAG); } catch(e){ stillPending = null; }
+      if(stillPending && !currentUser){
+        try { sessionStorage.removeItem(FARVION_REDIRECT_FLAG); } catch(e){}
+        showAuthError({
+          code: 'auth/redirect-silent-fail',
+          message: 'Login sudah dipilih di Google, tapi Farvion gagal memulihkan sesinya di browser ini (biasanya karena Chrome memblokir penyimpanan/cookie lintas domain). Coba nonaktifkan "Block third-party cookies" di pengaturan situs Chrome untuk domain ini, lalu tap tombol login lagi. Kalau masih gagal, coba browser lain (mis. Firefox) atau buka Farvion di tab biasa (bukan mode InPrivate/Incognito).'
+        });
+      }
+    }, 2500);
+  })();
 
   // Pantau status login — otomatis jalan tiap kali auth state berubah (login/logout/refresh)
   auth.onAuthStateChanged(user => {
@@ -6017,10 +6137,33 @@
   // false kalau bukan intent GitHub/Notion sama sekali (biar sendMessage
   // lanjut ke jalur streaming normal). Kalau kedua koneksi kosong, langsung
   // return false tanpa memanggil Gemini sama sekali.
+  // Kata kunci ringan (ID + EN) untuk deteksi awal apakah pesan user kemungkinan
+  // berniat memakai tool GitHub/Notion. Ini HANYA gerbang murah di sisi kita
+  // sebelum memaksa Gemini pakai mode 'ANY' (wajib panggil tool) — supaya pesan
+  // yang jelas tidak nyambung (mis. sapaan biasa) tidak dipaksa memanggil tool
+  // yang tidak relevan. Kalau tidak ada kata kunci yang cocok, tetap fallback
+  // ke jalur streaming normal seperti biasa (tidak memblokir, hanya menghemat
+  // 1 panggilan API dan mencegah pemaksaan tool yang salah sasaran).
+  const GITHUB_NOTION_INTENT_KEYWORDS = [
+    'github', 'repo', 'repositori', 'repository', 'commit', 'push', 'pull request',
+    'branch', 'clone', 'file di git', 'folder di git',
+    'notion', 'halaman notion', 'database notion', 'workspace notion'
+  ];
+  function messageMatchesGithubNotionIntent(text){
+    const lower = (text || '').toLowerCase();
+    return GITHUB_NOTION_INTENT_KEYWORDS.some(kw => lower.includes(kw));
+  }
+
   async function runGithubToolLoop(conv, initialContents){
     const githubToken = localStorage.getItem(GITHUB_TOKEN_KEY);
     const notionToken = localStorage.getItem(NOTION_ACCESS_TOKEN_KEY);
     if(!githubToken && !notionToken) return false;
+
+    // Ambil teks pesan user terakhir (elemen paling akhir di initialContents)
+    // untuk gerbang deteksi intent murah di atas.
+    const lastUserParts = initialContents[initialContents.length - 1]?.parts || [];
+    const lastUserText = lastUserParts.filter(p => typeof p.text === 'string').map(p => p.text).join(' ');
+    const likelyIntent = messageMatchesGithubNotionIntent(lastUserText);
 
     const githubUsername = localStorage.getItem(GITHUB_USER_KEY);
     const usernameHint = githubUsername ? `\n\nUsername GitHub user yang sedang terhubung: ${githubUsername}.` : '';
@@ -6047,11 +6190,21 @@
     let usedAnyTool = false;
 
     for(let iteration = 0; iteration < MAX_TOOL_CALL_ITERATIONS; iteration++){
+      // Giliran PERTAMA dipaksa pakai mode 'ANY' HANYA kalau pesan user lolos
+      // gerbang deteksi intent (likelyIntent) di atas: GitHub/Notion sudah
+      // terhubung, jadi begitu pesannya match, Gemini WAJIB memanggil salah
+      // satu tool yang di-declare — tidak boleh lolos dengan jawaban teks
+      // biasa (mis. "ada gangguan teknis"). Kalau pesan tidak match (kemungkinan
+      // besar bukan soal GitHub/Notion), tetap pakai 'AUTO' supaya Gemini bebas
+      // menjawab teks biasa tanpa dipaksa memanggil tool yang tidak relevan.
+      // Giliran berikutnya (setelah minimal 1 tool sukses dipakai) juga selalu
+      // 'AUTO' supaya Gemini bisa berhenti dan memberi jawaban final normal.
+      const functionCallingMode = (iteration === 0 && likelyIntent) ? 'ANY' : 'AUTO';
       const result = await fetchGeminiWithRetry(GEMINI_TOOL_MODEL, {
         contents,
         systemInstruction,
         tools: [{ functionDeclarations: toolDeclarations }],
-        toolConfig: { functionCallingConfig: { mode: 'AUTO' } }
+        toolConfig: { functionCallingConfig: { mode: functionCallingMode } }
       });
 
       if(!result.ok){
