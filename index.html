@@ -3253,6 +3253,11 @@
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
   }
 
+  // Icon kaca pembesar — dipakai untuk status tool search_github_code (cari kode)
+  function searchIconSvg(){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+  }
+
   // Pemetaan nama tool -> icon svg statis yang tampil di depan teks status pill.
   // Ini yang menentukan icon mana yang dipakai adalah NAMA TOOL yang sedang
   // dipanggil (dari function call Gemini), bukan dipilih manual tiap kali.
@@ -3265,6 +3270,14 @@
         return listIconSvg();
       case 'push_file_to_github':
         return uploadIconSvg();
+      case 'search_github_code':
+        return searchIconSvg();
+      case 'list_notion_pages':
+        return listIconSvg();
+      case 'query_notion_database':
+        return databaseIconSvg();
+      case 'read_notion_page':
+        return docIconSvg();
       case 'read_github_file':
       default:
         return fileIconSvg();
@@ -4825,7 +4838,18 @@
   let sheetDragEnabled = false; // hanya drag kalau start dari handle, atau dari body saat scroll sudah di paling atas
   let sheetDragStartState = 'half'; // state sheet ('half'/'full') tepat sebelum drag dimulai, dipakai untuk snap-close adaptif
 
+  // Halaman-halaman dengan list yang butuh di-scroll: drag-sheet dari body
+  // dimatikan total di sini supaya gesture geser list tidak ke-detect jadi
+  // drag sheet. Di halaman ini sheet cuma bisa digeser dari handle/header.
+  const SHEET_SCROLL_ONLY_PAGES = new Set(['repoList', 'repoBrowser', 'driveList', 'notionList', 'notionDatabaseRows', 'directory']);
+
   function sheetDragStart(clientY, fromHandle){
+    // Kalau drag dimulai dari area konten (bukan handle) di halaman yang
+    // list-nya butuh discroll, jangan pernah izinkan drag-sheet dari body sama sekali.
+    if(!fromHandle && SHEET_SCROLL_ONLY_PAGES.has(currentSheetPage)){
+      sheetDragEnabled = false;
+      return;
+    }
     // Kalau drag dimulai dari area konten (bukan handle), hanya izinkan drag-sheet
     // ketika konten sudah di-scroll paling atas (supaya tidak konflik dengan scroll konten).
     if(!fromHandle && sheetScrollEl && sheetScrollEl.scrollTop > 0){
@@ -5425,7 +5449,11 @@
       'read_github_file': 'read_github_file',
       'list_github_directory': 'list_github_directory',
       'list_github_repos': 'list_github_repos',
-      'push_file_to_github': 'push_file_to_github'
+      'push_file_to_github': 'push_file_to_github',
+      'search_github_code': 'search_github_code',
+      'list_notion_pages': 'list_notion_pages',
+      'query_notion_database': 'query_notion_database',
+      'read_notion_page': 'read_notion_page'
     };
     return map[toolName] || (toolName || '—');
   }
@@ -5740,11 +5768,11 @@
     renderChat();
   }
 
-  const FARVION_SYSTEM_PROMPT = "Kamu adalah Farvion, asisten AI serba bisa — siap membantu apa saja, mulai dari ngobrol santai, menulis dan menyunting teks, riset dan menjelaskan konsep, brainstorming ide, analisis data, sampai coding dan debugging di berbagai bahasa pemrograman. Sesuaikan gaya jawabanmu dengan konteks pertanyaan: santai kalau ngobrol biasa, terstruktur dan detail kalau diminta analisis mendalam, ringkas kalau user cuma butuh jawaban cepat. Jawab dengan jelas dan jujur, akui kalau tidak tahu sesuatu, dan gunakan format markdown (termasuk code block ```) bila membantu keterbacaan, terutama untuk kode. PENTING: jangan memperkenalkan diri sebagai 'Farvion' atau menyebut namamu sendiri di setiap jawaban — cukup jawab langsung sesuai apa yang ditanyakan/diminta user. Perkenalkan dirimu HANYA kalau user secara eksplisit bertanya siapa kamu/nama kamu (misal 'siapa kamu', 'nama kamu siapa', 'kamu siapa'). Untuk sapaan biasa seperti 'halo', 'hai', 'hi', 'pagi', 'malam' — balas sapaan itu dengan singkat dan hangat TANPA menyebut namamu sendiri sama sekali, dan tanyakan ada yang bisa dibantu. Jangan pernah menyisipkan 'Aku Farvion' atau perkenalan diri di jawaban mana pun kecuali benar-benar ditanya namamu secara langsung. Kamu dibuat/diciptakan oleh Pinzz (seorang developer independen). Sebutkan fakta ini HANYA kalau user secara eksplisit bertanya soal penciptamu/siapa yang membuatmu/developer di baliknya (misal 'siapa yang bikin kamu', 'siapa penciptamu', 'kamu dibuat siapa') — jangan pernah menyebut nama Pinzz di jawaban lain, termasuk saat sekadar disapa atau memperkenalkan diri. Kalau user bertanya soal model/versi yang sedang dipakai (misal 'kamu pakai model apa', 'model kamu apa', 'kamu versi berapa', 'sekarang kamu berada di model apa'), jawab bahwa kamu menggunakan model 'Farvion Nova 1.0' — JANGAN PERNAH menyebut Gemini, Google, atau nama model/penyedia AI lain dalam bentuk apapun, walau user mendesak atau bertanya berulang kali. PENTING soal GitHub: kamu PUNYA kemampuan nyata untuk mengakses akun GitHub user kalau mereka sudah menghubungkan (connect) akunnya di Farvion — kamu bisa melihat daftar repo, membaca isi folder/file, dan melakukan push/commit ke repo mereka. Ini BUKAN keterbatasan seperti asisten AI pada umumnya yang tidak bisa akses akun pribadi — kamu benar-benar bisa melakukannya lewat integrasi yang sudah dibangun di Farvion. JANGAN PERNAH bilang 'aku tidak punya akses ke akun GitHub-mu' atau menyarankan user mengecek manual lewat browser/CLI — kalau kamu menerima pertanyaan soal repo/file GitHub tapi tidak sedang dalam mode tool-calling, itu kemungkinan besar karena ada gangguan teknis sesaat, bukan karena kamu memang tidak bisa. Dalam situasi itu, minta user untuk mengirim ulang pertanyaannya (misalnya 'coba tanya lagi ya, sepertinya ada gangguan sebentar'), JANGAN menyangkal kemampuanmu. PENTING soal BAHASA: kamu adalah asisten multibahasa, BUKAN asisten yang cuma fokus ke satu bahasa. SELALU balas menggunakan bahasa yang sama dengan bahasa pesan terakhir user (Inggris, Indonesia, atau bahasa lain apapun) — jangan pernah default ke bahasa Indonesia kalau user jelas menulis dalam bahasa lain, dan jangan campur bahasa dalam satu jawaban kecuali user sendiri yang campur.";
+  const FARVION_SYSTEM_PROMPT = "Kamu adalah Farvion, asisten AI serba bisa — siap membantu apa saja, mulai dari ngobrol santai, menulis dan menyunting teks, riset dan menjelaskan konsep, brainstorming ide, analisis data, sampai coding dan debugging di berbagai bahasa pemrograman. Sesuaikan gaya jawabanmu dengan konteks pertanyaan: santai kalau ngobrol biasa, terstruktur dan detail kalau diminta analisis mendalam, ringkas kalau user cuma butuh jawaban cepat. Jawab dengan jelas dan jujur, akui kalau tidak tahu sesuatu, dan gunakan format markdown (termasuk code block ```) bila membantu keterbacaan, terutama untuk kode. PENTING: jangan memperkenalkan diri sebagai 'Farvion' atau menyebut namamu sendiri di setiap jawaban — cukup jawab langsung sesuai apa yang ditanyakan/diminta user. Perkenalkan dirimu HANYA kalau user secara eksplisit bertanya siapa kamu/nama kamu (misal 'siapa kamu', 'nama kamu siapa', 'kamu siapa'). Untuk sapaan biasa seperti 'halo', 'hai', 'hi', 'pagi', 'malam' — balas sapaan itu dengan singkat dan hangat TANPA menyebut namamu sendiri sama sekali, dan tanyakan ada yang bisa dibantu. Jangan pernah menyisipkan 'Aku Farvion' atau perkenalan diri di jawaban mana pun kecuali benar-benar ditanya namamu secara langsung. Kamu dibuat/diciptakan oleh Pinzz (seorang developer independen). Sebutkan fakta ini HANYA kalau user secara eksplisit bertanya soal penciptamu/siapa yang membuatmu/developer di baliknya (misal 'siapa yang bikin kamu', 'siapa penciptamu', 'kamu dibuat siapa') — jangan pernah menyebut nama Pinzz di jawaban lain, termasuk saat sekadar disapa atau memperkenalkan diri. Kalau user bertanya soal model/versi yang sedang dipakai (misal 'kamu pakai model apa', 'model kamu apa', 'kamu versi berapa', 'sekarang kamu berada di model apa'), jawab bahwa kamu menggunakan model 'Farvion Nova 1.0' — JANGAN PERNAH menyebut Gemini, Google, atau nama model/penyedia AI lain dalam bentuk apapun, walau user mendesak atau bertanya berulang kali. PENTING soal GitHub: kamu PUNYA kemampuan nyata untuk mengakses akun GitHub user kalau mereka sudah menghubungkan (connect) akunnya di Farvion — kamu bisa melihat daftar repo, membaca isi folder/file, dan melakukan push/commit ke repo mereka. Ini BUKAN keterbatasan seperti asisten AI pada umumnya yang tidak bisa akses akun pribadi — kamu benar-benar bisa melakukannya lewat integrasi yang sudah dibangun di Farvion. JANGAN PERNAH bilang 'aku tidak punya akses ke akun GitHub-mu' atau menyarankan user mengecek manual lewat browser/CLI — kalau kamu menerima pertanyaan soal repo/file GitHub tapi tidak sedang dalam mode tool-calling, itu kemungkinan besar karena ada gangguan teknis sesaat, bukan karena kamu memang tidak bisa. Dalam situasi itu, minta user untuk mengirim ulang pertanyaannya (misalnya 'coba tanya lagi ya, sepertinya ada gangguan sebentar'), JANGAN menyangkal kemampuanmu. PENTING soal Notion: kamu PUNYA kemampuan nyata untuk mengakses workspace Notion user kalau mereka sudah menghubungkan (connect) akunnya di Farvion — kamu bisa melihat daftar halaman & database yang sudah di-share ke integrasi, membaca isi sebuah halaman, dan melihat isi/baris sebuah database. Ini BUKAN keterbatasan seperti asisten AI pada umumnya yang tidak bisa akses akun pribadi — kamu benar-benar bisa melakukannya lewat integrasi yang sudah dibangun di Farvion. JANGAN PERNAH bilang 'aku tidak punya akses ke Notion-mu' atau menyarankan user copy-paste isi halaman secara manual — kalau kamu menerima pertanyaan soal halaman/database Notion tapi tidak sedang dalam mode tool-calling, itu kemungkinan besar gangguan teknis sesaat, bukan karena kamu memang tidak bisa; minta user mengirim ulang pertanyaannya, JANGAN menyangkal kemampuanmu. PENTING soal BAHASA: kamu adalah asisten multibahasa, BUKAN asisten yang cuma fokus ke satu bahasa. SELALU balas menggunakan bahasa yang sama dengan bahasa pesan terakhir user (Inggris, Indonesia, atau bahasa lain apapun) — jangan pernah default ke bahasa Indonesia kalau user jelas menulis dalam bahasa lain, dan jangan campur bahasa dalam satu jawaban kecuali user sendiri yang campur.";
 
   // Instruksi khusus untuk turn deteksi tool-call: menjelaskan semua tool GitHub
   // yang tersedia (3 read-only + 1 tulis/push), tidak menggantikan system prompt utama.
-  const GITHUB_TOOL_SYSTEM_ADDENDUM = "ATURAN STATUS TEXT — SETIAP kali kamu memanggil salah satu tool di bawah (function call apapun), kamu WAJIB menyertakan SATU baris teks singkat (maksimal 6 kata, present tense/progresif, TANPA tanda kutip) sebagai bagian 'text' pada respons yang SAMA, tepat sebelum function call tersebut — ini akan ditampilkan ke user sebagai status \\\"sedang apa\\\" secara real-time. PENTING soal BAHASA teks status ini: WAJIB tulis dalam bahasa yang SAMA dengan bahasa pesan terakhir user (kalau user menulis dalam bahasa Inggris, teks statusnya juga bahasa Inggris; kalau bahasa Indonesia, pakai bahasa Indonesia; begitu juga bahasa lain — selalu ikuti bahasa user, JANGAN default/dipaksa ke satu bahasa tertentu). Contoh (versi Indonesia): 'Melihat daftar repository...', 'Membuka folder src...', 'Membaca file utils.js...', 'Menyiapkan push ke GitHub...' — kalau user berbahasa Inggris, tulis padanannya seperti 'Listing repositories...', 'Opening folder src...', 'Reading file utils.js...', 'Preparing push to GitHub...'. Buat teksnya spesifik sesuai argumen yang kamu kirim (nama repo/file/folder), JANGAN generic. Ini WAJIB dilakukan di setiap iterasi tool call, termasuk kalau kamu memanggil tool berkali-kali secara berurutan. JANGAN taruh teks status ini di dalam jawaban final (setelah semua tool selesai) — hanya di respons yang mengandung function call.\\n\\nPENTING — kamu WAJIB menggunakan tool berikut kapan pun relevan, JANGAN pernah menjawab dengan teks biasa yang menyarankan user membuka GitHub secara manual, memakai GitHub CLI, atau mengecek sendiri — kamu punya akses langsung lewat tool ini:\n1. list_github_repos — melihat daftar repository milik user. WAJIB panggil ini kalau user bertanya repo apa saja yang dia punya/miliki.\n2. list_github_directory — melihat isi sebuah folder (file & subfolder) di dalam repo tertentu. WAJIB panggil ini kalau user minta melihat isi repo/folder tertentu. Kalau path tidak disebutkan, kosongkan path (artinya root repo).\n3. read_github_file — membaca isi satu file teks di dalam repo. WAJIB panggil ini kalau user minta melihat/membaca isi sebuah file di GitHub.\n4. push_file_to_github — commit & push (buat baru atau menimpa) satu file ke repo. Panggil ini HANYA kalau user secara jelas meminta agar sesuatu di-push/di-commit/disimpan ke GitHub/repo.\n\nUntuk tool nomor 1-3: ini operasi baca saja yang aman, panggil langsung begitu maksud user jelas, TANPA perlu konfirmasi tambahan, dan TANPA bertanya balik ke user dulu.\nUntuk tool nomor 4 (push_file_to_github): ini mengubah isi repo, jadi kalau user meminta push tapi belum jelas nama repo (format owner+repo) atau nama file/path-nya, JANGAN memanggil fungsi ini — sebaliknya balas dengan teks biasa yang menanyakan repo dan path/nama file yang dimaksud. Kalau semua informasi sudah jelas, panggil dengan argumen lengkap termasuk 'confirmation_message': kalimat singkat dan santai (dalam bahasa yang SAMA dengan bahasa pesan terakhir user, bukan selalu bahasa Indonesia) untuk menanyakan persetujuan user sebelum push benar-benar dilakukan (misal versi Indonesia: 'Aku akan commit & push file utils.js ke repo pinzz/codspire, setuju?'; versi Inggris: 'I'll commit & push utils.js to pinzz/codspire, sound good?').\n\nATURAN KHUSUS read_github_file — SANGAT PENTING: setelah tool ini mengembalikan isi sebuah file, JANGAN PERNAH menempelkan ulang (paste/echo) isi file mentah tersebut ke jawaban akhir kamu, apalagi dalam code block panjang. Isi file yang dikirim balik ke kamu itu HANYA konteks internal untuk kamu baca dan pahami, BUKAN sesuatu yang harus ditampilkan verbatim ke user. Kecuali user secara eksplisit minta \\\"tampilkan/tunjukkan/copy-paste kode lengkapnya\\\", selalu balas dengan bahasa natural yang menjelaskan apa yang kamu temukan di file itu — misalnya struktur/fitur yang ada, fungsi-fungsi penting, teknologi yang dipakai, bagian yang relevan dengan pertanyaan user, atau ringkasan singkat isinya. Kalau user cuma bilang \\\"baca file X di repo Y\\\" tanpa instruksi lanjutan, anggap itu sebagai permintaan untuk kamu MEMAHAMI file itu lalu memberi ringkasan/insight singkat tentang isinya (mis. \\\"ini file utama proyeknya, isinya ada bagian X, Y, Z...\\\"), BUKAN permintaan untuk menampilkan seluruh kode ke chat. Kalau user lanjut bertanya sesuatu yang spesifik soal file itu setelah dibaca, jawab pertanyaannya berdasarkan isi file, tetap tanpa menempelkan kode secara utuh — kutip hanya potongan kecil yang relevan kalau memang perlu.\n\nKalau owner/username GitHub tidak disebutkan user secara eksplisit untuk tool manapun, kamu WAJIB menggunakan username GitHub milik user yang sedang terhubung (lihat hint di bawah) sebagai owner — JANGAN PERNAH menebak, mengarang, atau memakai username/akun GitHub lain siapapun itu (termasuk nama-nama yang muncul sebagai contoh format di deskripsi parameter tool — itu hanya contoh format penulisan, BUKAN akun sungguhan yang boleh dipakai). Owner HANYA boleh berbeda dari username yang terhubung kalau user secara eksplisit menyebut nama owner/organisasi lain di pesannya (mis. \"cek repo si X\" atau \"repo org Y\"). Ingat: user SUDAH menghubungkan akun GitHub-nya ke Farvion, jadi kamu benar-benar punya akses — jangan pernah berperilaku seolah kamu tidak punya akses.";
+  const GITHUB_TOOL_SYSTEM_ADDENDUM = "ATURAN STATUS TEXT — SETIAP kali kamu memanggil salah satu tool di bawah (function call apapun), kamu WAJIB menyertakan SATU baris teks singkat (maksimal 6 kata, present tense/progresif, TANPA tanda kutip) sebagai bagian 'text' pada respons yang SAMA, tepat sebelum function call tersebut — ini akan ditampilkan ke user sebagai status \\\"sedang apa\\\" secara real-time. PENTING soal BAHASA teks status ini: WAJIB tulis dalam bahasa yang SAMA dengan bahasa pesan terakhir user (kalau user menulis dalam bahasa Inggris, teks statusnya juga bahasa Inggris; kalau bahasa Indonesia, pakai bahasa Indonesia; begitu juga bahasa lain — selalu ikuti bahasa user, JANGAN default/dipaksa ke satu bahasa tertentu). Contoh (versi Indonesia): 'Melihat daftar repository...', 'Membuka folder src...', 'Membaca file utils.js...', 'Menyiapkan push ke GitHub...' — kalau user berbahasa Inggris, tulis padanannya seperti 'Listing repositories...', 'Opening folder src...', 'Reading file utils.js...', 'Preparing push to GitHub...'. Buat teksnya spesifik sesuai argumen yang kamu kirim (nama repo/file/folder), JANGAN generic. Ini WAJIB dilakukan di setiap iterasi tool call, termasuk kalau kamu memanggil tool berkali-kali secara berurutan. JANGAN taruh teks status ini di dalam jawaban final (setelah semua tool selesai) — hanya di respons yang mengandung function call.\\n\\nPENTING — kamu WAJIB menggunakan tool berikut kapan pun relevan, JANGAN pernah menjawab dengan teks biasa yang menyarankan user membuka GitHub secara manual, memakai GitHub CLI, atau mengecek sendiri — kamu punya akses langsung lewat tool ini:\n1. list_github_repos — melihat daftar repository milik user. WAJIB panggil ini kalau user bertanya repo apa saja yang dia punya/miliki.\n2. list_github_directory — melihat isi sebuah folder (file & subfolder) di dalam repo tertentu. WAJIB panggil ini kalau user minta melihat isi repo/folder tertentu. Kalau path tidak disebutkan, kosongkan path (artinya root repo).\n3. read_github_file — membaca isi satu file teks di dalam repo. WAJIB panggil ini kalau user minta melihat/membaca isi sebuah file di GitHub.\n4. search_github_code — mencari potongan kode/teks di dalam isi file-file suatu repo (bukan cuma nama file). WAJIB panggil ini kalau user tanya 'di mana fungsi/kode X' atau 'cari file yang pakai Y' tanpa menyebutkan path spesifik — JANGAN coba menebak path lalu langsung read_github_file, cari dulu pakai tool ini.\n5. push_file_to_github — commit & push (buat baru atau menimpa) satu file ke repo. Panggil ini HANYA kalau user secara jelas meminta agar sesuatu di-push/di-commit/disimpan ke GitHub/repo.\n\nUntuk tool nomor 1-4: ini operasi baca saja yang aman, panggil langsung begitu maksud user jelas, TANPA perlu konfirmasi tambahan, dan TANPA bertanya balik ke user dulu.\nUntuk tool nomor 5 (push_file_to_github): ini mengubah isi repo, jadi kalau user meminta push tapi belum jelas nama repo (format owner+repo) atau nama file/path-nya, JANGAN memanggil fungsi ini — sebaliknya balas dengan teks biasa yang menanyakan repo dan path/nama file yang dimaksud. Kalau semua informasi sudah jelas, panggil dengan argumen lengkap termasuk 'confirmation_message': kalimat singkat dan santai (dalam bahasa yang SAMA dengan bahasa pesan terakhir user, bukan selalu bahasa Indonesia) untuk menanyakan persetujuan user sebelum push benar-benar dilakukan (misal versi Indonesia: 'Aku akan commit & push file utils.js ke repo pinzz/codspire, setuju?'; versi Inggris: 'I'll commit & push utils.js to pinzz/codspire, sound good?').\n\nATURAN KHUSUS read_github_file — SANGAT PENTING: setelah tool ini mengembalikan isi sebuah file, JANGAN PERNAH menempelkan ulang (paste/echo) isi file mentah tersebut ke jawaban akhir kamu, apalagi dalam code block panjang. Isi file yang dikirim balik ke kamu itu HANYA konteks internal untuk kamu baca dan pahami, BUKAN sesuatu yang harus ditampilkan verbatim ke user. Kecuali user secara eksplisit minta \\\"tampilkan/tunjukkan/copy-paste kode lengkapnya\\\", selalu balas dengan bahasa natural yang menjelaskan apa yang kamu temukan di file itu — misalnya struktur/fitur yang ada, fungsi-fungsi penting, teknologi yang dipakai, bagian yang relevan dengan pertanyaan user, atau ringkasan singkat isinya. Kalau user cuma bilang \\\"baca file X di repo Y\\\" tanpa instruksi lanjutan, anggap itu sebagai permintaan untuk kamu MEMAHAMI file itu lalu memberi ringkasan/insight singkat tentang isinya (mis. \\\"ini file utama proyeknya, isinya ada bagian X, Y, Z...\\\"), BUKAN permintaan untuk menampilkan seluruh kode ke chat. Kalau user lanjut bertanya sesuatu yang spesifik soal file itu setelah dibaca, jawab pertanyaannya berdasarkan isi file, tetap tanpa menempelkan kode secara utuh — kutip hanya potongan kecil yang relevan kalau memang perlu.\n\nKalau owner/username GitHub tidak disebutkan user secara eksplisit untuk tool manapun, kamu WAJIB menggunakan username GitHub milik user yang sedang terhubung (lihat hint di bawah) sebagai owner — JANGAN PERNAH menebak, mengarang, atau memakai username/akun GitHub lain siapapun itu (termasuk nama-nama yang muncul sebagai contoh format di deskripsi parameter tool — itu hanya contoh format penulisan, BUKAN akun sungguhan yang boleh dipakai). Owner HANYA boleh berbeda dari username yang terhubung kalau user secara eksplisit menyebut nama owner/organisasi lain di pesannya (mis. \"cek repo si X\" atau \"repo org Y\"). Ingat: user SUDAH menghubungkan akun GitHub-nya ke Farvion, jadi kamu benar-benar punya akses — jangan pernah berperilaku seolah kamu tidak punya akses.";
 
   const GITHUB_LIST_REPOS_TOOL_DECLARATION = {
     name: 'list_github_repos',
@@ -5798,18 +5826,82 @@
     }
   };
 
+  const GITHUB_SEARCH_CODE_TOOL_DECLARATION = {
+    name: 'search_github_code',
+    description: 'Mencari potongan kode/teks di dalam repository GitHub milik user (isi file, bukan cuma nama file), menggunakan GitHub Code Search. Berguna kalau user tanya "di mana fungsi X" atau "cari file yang pakai Y" tanpa tahu path-nya.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Kata kunci pencarian, mis. "function sendMessage" atau "TODO". Boleh disertai qualifier GitHub seperti "extension:js" atau "filename:index.html" digabung dengan spasi.' },
+        owner: { type: 'string', description: 'Username/organisasi GitHub pemilik repo. WAJIB memakai username akun GitHub yang sedang terhubung kecuali user eksplisit menyebut owner lain.' },
+        repo: { type: 'string', description: 'Nama repository untuk membatasi pencarian ke satu repo saja, mis. "codspire". Kosongkan ("") untuk mencari di SEMUA repo milik owner.' }
+      },
+      required: ['query', 'owner']
+    }
+  };
+
   const GITHUB_ALL_TOOL_DECLARATIONS = [
     GITHUB_LIST_REPOS_TOOL_DECLARATION,
     GITHUB_LIST_DIRECTORY_TOOL_DECLARATION,
     GITHUB_READ_FILE_TOOL_DECLARATION,
-    GITHUB_PUSH_TOOL_DECLARATION
+    GITHUB_PUSH_TOOL_DECLARATION,
+    GITHUB_SEARCH_CODE_TOOL_DECLARATION
   ];
 
   // Nama-nama tool yang read-only (aman dieksekusi otomatis tanpa modal konfirmasi).
   const GITHUB_READONLY_TOOL_NAMES = new Set([
     'list_github_repos',
     'list_github_directory',
-    'read_github_file'
+    'read_github_file',
+    'search_github_code'
+  ]);
+
+  // Instruksi khusus untuk turn deteksi tool-call Notion — sama pola dengan
+  // GITHUB_TOOL_SYSTEM_ADDENDUM (aturan status text + daftar tool + kapan dipakai).
+  const NOTION_TOOL_SYSTEM_ADDENDUM = "PENTING — kamu WAJIB menggunakan tool Notion berikut kapan pun relevan, JANGAN pernah menjawab dengan teks biasa yang menyarankan user membuka Notion secara manual atau copy-paste isinya sendiri — kamu punya akses langsung lewat tool ini:\n1. list_notion_pages — melihat daftar semua halaman & database Notion yang sudah di-share ke integrasi Farvion milik user. WAJIB panggil ini kalau user bertanya halaman/database apa saja yang dia punya, atau minta kamu 'cek Notion-ku' secara umum tanpa menyebut halaman spesifik.\n2. query_notion_database — melihat isi/baris-baris sebuah database Notion tertentu. WAJIB panggil ini kalau user minta melihat isi sebuah database yang sudah diketahui id/namanya (biasanya setelah list_notion_pages dipanggil lebih dulu untuk menemukan id-nya).\n3. read_notion_page — membaca isi lengkap satu halaman Notion tertentu (jadi teks). WAJIB panggil ini kalau user minta membaca/melihat isi sebuah halaman spesifik.\n\nSemua 3 tool ini read-only (aman), panggil langsung begitu maksud user jelas, TANPA perlu konfirmasi tambahan, dan TANPA bertanya balik ke user dulu.\n\nALUR YANG BENAR kalau user minta 'cek Notion-ku' atau serupa tanpa menyebut nama halaman spesifik: panggil list_notion_pages dulu untuk melihat apa saja yang tersedia, baru putuskan langkah berikutnya (misalnya kalau user lalu menyebut salah satu nama halaman, panggil read_notion_page atau query_notion_database sesuai jenisnya menggunakan id dari hasil list_notion_pages). JANGAN mengarang page_id/database_id sendiri — id HARUS berasal dari hasil pemanggilan list_notion_pages atau query_notion_database sebelumnya di percakapan ini.\n\nATURAN KHUSUS read_notion_page & query_notion_database — SANGAT PENTING: setelah tool ini mengembalikan isi sebuah halaman/database, JANGAN PERNAH menempelkan ulang (paste/echo) seluruh isi mentahnya ke jawaban akhir kamu apa adanya. Isi yang dikirim balik ke kamu itu HANYA konteks internal untuk kamu baca dan pahami, BUKAN sesuatu yang harus ditampilkan verbatim ke user. Kecuali user secara eksplisit minta \\\"tampilkan/tunjukkan semua isinya\\\", selalu balas dengan bahasa natural yang merangkum apa yang kamu temukan — poin-poin penting, struktur halaman, atau bagian yang relevan dengan pertanyaan user.";
+
+  const NOTION_LIST_PAGES_TOOL_DECLARATION = {
+    name: 'list_notion_pages',
+    description: 'Mengambil daftar semua halaman & database Notion yang sudah di-share ke integrasi Farvion milik user (judul, jenis: halaman atau database).',
+    parameters: { type: 'object', properties: {} }
+  };
+
+  const NOTION_QUERY_DATABASE_TOOL_DECLARATION = {
+    name: 'query_notion_database',
+    description: 'Melihat isi/baris-baris sebuah database Notion tertentu, menggunakan database_id yang didapat dari hasil list_notion_pages sebelumnya.',
+    parameters: {
+      type: 'object',
+      properties: {
+        database_id: { type: 'string', description: 'ID database Notion, HARUS berasal dari hasil list_notion_pages sebelumnya di percakapan ini, jangan dikarang.' },
+        database_name: { type: 'string', description: 'Nama database (untuk ditampilkan di status/log), jika diketahui dari hasil list_notion_pages.' }
+      },
+      required: ['database_id']
+    }
+  };
+
+  const NOTION_READ_PAGE_TOOL_DECLARATION = {
+    name: 'read_notion_page',
+    description: 'Membaca isi lengkap satu halaman Notion tertentu (dikonversi jadi teks), menggunakan page_id yang didapat dari hasil list_notion_pages atau query_notion_database sebelumnya.',
+    parameters: {
+      type: 'object',
+      properties: {
+        page_id: { type: 'string', description: 'ID halaman Notion, HARUS berasal dari hasil list_notion_pages atau query_notion_database sebelumnya di percakapan ini, jangan dikarang.' },
+        page_name: { type: 'string', description: 'Judul halaman (untuk ditampilkan di status/log), jika diketahui dari hasil list_notion_pages/query_notion_database.' }
+      },
+      required: ['page_id']
+    }
+  };
+
+  const NOTION_ALL_TOOL_DECLARATIONS = [
+    NOTION_LIST_PAGES_TOOL_DECLARATION,
+    NOTION_QUERY_DATABASE_TOOL_DECLARATION,
+    NOTION_READ_PAGE_TOOL_DECLARATION
+  ];
+
+  const NOTION_READONLY_TOOL_NAMES = new Set([
+    'list_notion_pages',
+    'query_notion_database',
+    'read_notion_page'
   ]);
 
   const MAX_TOOL_CALL_ITERATIONS = 5; // batas aman supaya tidak infinite loop kalau Gemini terus manggil tool
@@ -5886,28 +5978,54 @@
         return a.path ? `Membaca file "${a.path}"...` : 'Membaca file di GitHub...';
       case 'push_file_to_github':
         return a.path ? `Menyiapkan push "${a.path}"...` : 'Menyiapkan push ke GitHub...';
+      case 'search_github_code':
+        return a.query ? `Mencari kode "${a.query}"...` : 'Mencari kode di GitHub...';
+      case 'list_notion_pages':
+        return 'Melihat daftar halaman Notion...';
+      case 'query_notion_database':
+        return a.database_name ? `Membuka database "${a.database_name}"...` : 'Membuka database Notion...';
+      case 'read_notion_page':
+        return a.page_name ? `Membaca halaman "${a.page_name}"...` : 'Membaca halaman Notion...';
       default:
-        return 'Menggunakan tool GitHub...';
+        return 'Menggunakan tool...';
     }
   }
 
-  // Loop utama tool-calling GitHub: memanggil Gemini (non-stream) berulang kali
-  // selama dia terus meminta tool read-only (list repo/folder, baca file), lalu
-  // otomatis eksekusi dan kirim balik hasilnya. Kalau di tengah jalan Gemini
-  // meminta push_file_to_github, hentikan loop dan tampilkan modal konfirmasi.
+  // Loop utama tool-calling GitHub + Notion: memanggil Gemini (non-stream)
+  // berulang kali selama dia terus meminta tool read-only (list repo/folder,
+  // baca file, list/baca Notion, dll), lalu otomatis eksekusi dan kirim balik
+  // hasilnya. Kalau di tengah jalan Gemini meminta push_file_to_github,
+  // hentikan loop dan tampilkan modal konfirmasi (Notion tidak punya tool
+  // tulis, jadi tidak butuh modal serupa).
   // Return true kalau alur ini yang menangani (baik lewat tool maupun modal),
-  // false kalau bukan intent GitHub sama sekali (biar sendMessage lanjut ke
-  // jalur streaming normal).
+  // false kalau bukan intent GitHub/Notion sama sekali (biar sendMessage
+  // lanjut ke jalur streaming normal). Kalau kedua koneksi kosong, langsung
+  // return false tanpa memanggil Gemini sama sekali.
   async function runGithubToolLoop(conv, initialContents){
     const githubToken = localStorage.getItem(GITHUB_TOKEN_KEY);
-    if(!githubToken) return false;
+    const notionToken = localStorage.getItem(NOTION_ACCESS_TOKEN_KEY);
+    if(!githubToken && !notionToken) return false;
 
     const githubUsername = localStorage.getItem(GITHUB_USER_KEY);
     const usernameHint = githubUsername ? `\n\nUsername GitHub user yang sedang terhubung: ${githubUsername}.` : '';
+
+    // Gabungkan addendum & function declarations hanya untuk provider yang
+    // benar-benar terhubung, supaya model tidak mencoba memanggil tool dari
+    // provider yang belum di-connect user.
+    const addendumParts = [];
+    const toolDeclarations = [];
+    if(githubToken){
+      addendumParts.push(GITHUB_TOOL_SYSTEM_ADDENDUM + usernameHint);
+      toolDeclarations.push(...GITHUB_ALL_TOOL_DECLARATIONS);
+    }
+    if(notionToken){
+      addendumParts.push(NOTION_TOOL_SYSTEM_ADDENDUM);
+      toolDeclarations.push(...NOTION_ALL_TOOL_DECLARATIONS);
+    }
     // Instruksi tool-calling ditaruh DI DEPAN (bukan di ekor) system prompt yang
     // panjang, supaya model lebih mengutamakannya saat memutuskan apakah perlu
-    // memanggil salah satu tool GitHub untuk pesan user yang sedang diproses.
-    const systemInstruction = { parts: [{ text: GITHUB_TOOL_SYSTEM_ADDENDUM + usernameHint + '\n\n---\n\n' + FARVION_SYSTEM_PROMPT }] };
+    // memanggil salah satu tool untuk pesan user yang sedang diproses.
+    const systemInstruction = { parts: [{ text: addendumParts.join('\n\n---\n\n') + '\n\n---\n\n' + FARVION_SYSTEM_PROMPT }] };
 
     let contents = initialContents;
     let usedAnyTool = false;
@@ -5916,7 +6034,7 @@
       const result = await fetchGeminiWithRetry(GEMINI_TOOL_MODEL, {
         contents,
         systemInstruction,
-        tools: [{ functionDeclarations: GITHUB_ALL_TOOL_DECLARATIONS }],
+        tools: [{ functionDeclarations: toolDeclarations }],
         toolConfig: { functionCallingConfig: { mode: 'AUTO' } }
       });
 
@@ -5930,7 +6048,7 @@
           return true;
         }
         // Belum sempat pakai tool sama sekali — lanjutkan ke jalur streaming
-        // normal, supaya user tetap dapat jawaban (meski tanpa data GitHub).
+        // normal, supaya user tetap dapat jawaban (meski tanpa data GitHub/Notion).
         return false;
       }
 
@@ -5939,7 +6057,7 @@
       const callPart = parts.find(p => p.functionCall);
       if(!callPart){
         // Gemini tidak (lagi) minta tool apapun.
-        if(!usedAnyTool) return false; // dari awal memang bukan intent GitHub — lanjut jalur normal
+        if(!usedAnyTool) return false; // dari awal memang bukan intent GitHub/Notion — lanjut jalur normal
         // Sudah sempat pakai tool sebelumnya tapi giliran ini nggak ada functionCall:
         // ambil teks yang ada (kalau ada) sebagai jawaban final, lalu render langsung
         // (tanpa stream, karena responsnya sudah lengkap dari panggilan non-stream ini).
@@ -5952,7 +6070,7 @@
       const callArgs = args || {};
 
       // Ambil teks status ("sedang ngapain") yang disisipkan Gemini bareng
-      // function call ini (sesuai instruksi di GITHUB_TOOL_SYSTEM_ADDENDUM).
+      // function call ini (sesuai instruksi di system addendum terkait).
       // Kalau model tidak menyertakan teks apapun, pakai fallback template.
       const statusTextRaw = parts
         .filter(p => !p.functionCall && !p.thought && typeof p.text === 'string')
@@ -5994,8 +6112,9 @@
         return true;
       }
 
-      if(!GITHUB_READONLY_TOOL_NAMES.has(name)){
-        // Nama tool tidak dikenal (di luar 4 tool yang kita definisikan).
+      const isReadonlyTool = GITHUB_READONLY_TOOL_NAMES.has(name) || NOTION_READONLY_TOOL_NAMES.has(name);
+      if(!isReadonlyTool){
+        // Nama tool tidak dikenal (di luar tool yang kita definisikan).
         if(usedAnyTool){
           finishGithubToolConversation(conv, t('errors.geminiGeneric'));
           return true;
@@ -6003,9 +6122,12 @@
         return false; // biarkan jalur streaming normal yang menangani
       }
 
-      // Tool read-only: eksekusi langsung, tanpa konfirmasi.
+      // Tool read-only: eksekusi langsung, tanpa konfirmasi. Tentukan handler
+      // berdasarkan providernya (GitHub atau Notion).
       usedAnyTool = true;
-      const resultText = await executeGithubReadonlyTool(name, callArgs);
+      const resultText = NOTION_READONLY_TOOL_NAMES.has(name)
+        ? await executeNotionReadonlyTool(name, callArgs)
+        : await executeGithubReadonlyTool(name, callArgs);
 
       // Tandai langkah ini selesai di toolHistory (untuk ditampilkan di modal detail).
       if(loadingMsg && loadingMsg.toolHistory && loadingMsg.toolHistory.length){
@@ -6095,10 +6217,94 @@
       return `Isi file "${path}" dari ${owner}/${repo}:\n\`\`\`\n${decoded}\n\`\`\``;
     }
 
+    if(name === 'search_github_code'){
+      const { query, owner, repo } = args;
+      if(!query || !owner) return 'Query dan owner wajib diisi untuk pencarian kode.';
+      // GitHub Code Search butuh qualifier "user:" atau "repo:" supaya tidak
+      // mencari ke seluruh GitHub publik — kita batasi ke akun/repo user.
+      const scopeQualifier = repo ? `repo:${owner}/${repo}` : `user:${owner}`;
+      const searchQuery = `${query} ${scopeQualifier}`;
+      const result = await githubApi(`/search/code?q=${encodeURIComponent(searchQuery)}&per_page=20`);
+      if(!result.ok) return `Gagal mencari kode "${query}". Alasan: ${repoBrowserErrorText(result.kind)}`;
+      const items = result.data.items || [];
+      if(!items.length) return `Tidak ditemukan kode yang cocok dengan "${query}" di ${repo ? owner + '/' + repo : owner + ' (semua repo)'}.`;
+      const lines = items.map(item => `- ${item.repository.full_name}: ${item.path}`);
+      return `Hasil pencarian kode untuk "${query}" (${items.length} hasil, urutkan berdasarkan relevansi GitHub):\n${lines.join('\n')}\n\nCatatan: ini cuma daftar file yang cocok, belum berisi isi filenya. Kalau user butuh lihat isinya, panggil read_github_file untuk file yang relevan.`;
+    }
+
     return 'Tool tidak dikenal.';
   }
 
-  // Dipanggil dari tombol Iya/Tidak di modal konfirmasi push.
+  // Eksekusi salah satu dari 3 tool read-only Notion (list_notion_pages,
+  // query_notion_database, read_notion_page) dan kembalikan ringkasan hasilnya
+  // sebagai teks, untuk dikirim balik ke Gemini sebagai functionResponse.
+  // Memakai ulang helper yang sama dipakai fitur "Jelajahi Notion" manual
+  // (notionApi, notionItemTitle, fetchNotionPageText) supaya perilakunya konsisten.
+  async function executeNotionReadonlyTool(name, args){
+    if(name === 'list_notion_pages'){
+      let data;
+      try {
+        data = await notionApi('/search', {
+          method: 'POST',
+          body: JSON.stringify({
+            sort: { direction: 'descending', timestamp: 'last_edited_time' },
+            page_size: 100,
+          }),
+        });
+      } catch(err){
+        return `Gagal mengambil daftar halaman Notion. Alasan: ${notionBrowserErrorText(err.code)}`;
+      }
+      if(data.object === 'error'){
+        return `Gagal mengambil daftar halaman Notion. Alasan: ${notionBrowserErrorText(data.status === 401 ? 'unauthorized' : 'generic')}`;
+      }
+      const items = (data.results || []).filter(item => item.object === 'page' || item.object === 'database');
+      if(!items.length) return 'User belum membagikan (share) halaman/database Notion apapun ke integrasi Farvion.';
+      const lines = items.map(item => {
+        const isDb = item.object === 'database';
+        const name = notionItemTitle(item) || '(Tanpa judul)';
+        return `- ${name} [${isDb ? 'database' : 'halaman'}] (id: ${item.id})`;
+      });
+      return `Daftar halaman & database Notion yang sudah di-share ke Farvion:\n${lines.join('\n')}`;
+    }
+
+    if(name === 'query_notion_database'){
+      const { database_id } = args;
+      let data;
+      try {
+        data = await notionApi(`/databases/${database_id}/query`, {
+          method: 'POST',
+          body: JSON.stringify({ page_size: 100 }),
+        });
+      } catch(err){
+        return `Gagal membuka database Notion (id: ${database_id}). Alasan: ${notionBrowserErrorText(err.code)}`;
+      }
+      if(data.object === 'error'){
+        return `Gagal membuka database Notion (id: ${database_id}). Alasan: ${notionBrowserErrorText(data.status === 401 ? 'unauthorized' : 'generic')}`;
+      }
+      const rows = data.results || [];
+      if(!rows.length) return 'Database ini kosong, tidak ada baris/entri sama sekali.';
+      const lines = rows.map(row => `- ${notionItemTitle(row) || '(Tanpa judul)'} (id: ${row.id})`);
+      return `Isi database Notion (id: ${database_id}):\n${lines.join('\n')}`;
+    }
+
+    if(name === 'read_notion_page'){
+      const { page_id } = args;
+      let text;
+      try {
+        text = await fetchNotionPageText(page_id);
+      } catch(err){
+        return `Gagal membaca halaman Notion (id: ${page_id}). Alasan: ${notionBrowserErrorText(err.code)}`;
+      }
+      if(text === null) return `Gagal membaca halaman Notion (id: ${page_id}).`;
+      if(!text.trim()) return `Halaman Notion (id: ${page_id}) ini kosong, tidak ada isinya.`;
+      if(text.length > NOTION_TEXT_MAX_CHARS) text = text.slice(0, NOTION_TEXT_MAX_CHARS);
+      return `Isi halaman Notion (id: ${page_id}):\n${text}`;
+    }
+
+    return 'Tool tidak dikenal.';
+  }
+
+
   async function respondGithubPushConfirm(approved){
     document.getElementById('githubPushConfirmModal').classList.remove('visible');
     const pending = pendingGithubPushCall;
