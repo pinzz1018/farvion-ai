@@ -1882,6 +1882,19 @@
     color: var(--ink-soft);
     font-size: 13px;
   }
+  .login-consent{
+    margin: 16px 0 0 0;
+    color: var(--ink-soft);
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+  .login-consent a{
+    color: rgba(43,38,32,0.72);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-weight: 500;
+  }
+  .login-consent a:hover{ color: var(--terracotta); }
 
   .user-chip{
     display:flex; align-items:center; gap:9px;
@@ -2042,6 +2055,7 @@
     </button>
     <div class="login-loading" id="loginLoading" style="display:none;" data-i18n="login.connecting">Menghubungkan ke Google...</div>
     <div class="login-error" id="loginError" style="display:none;"></div>
+    <p class="login-consent" data-i18n-html="login.consent">Dengan masuk, Anda menyetujui <a href="Terms of Service.html" target="_blank" rel="noopener">Ketentuan Layanan</a> dan <a href="Privacy Policy.html" target="_blank" rel="noopener">Kebijakan Privasi</a> Farvion.</p>
   </div>
 </div>
 
@@ -2658,6 +2672,7 @@
       'login.desc': 'Masuk dengan akun Google kamu untuk mulai mengobrol dengan Farvion, asisten AI kamu untuk semua hal.',
       'login.googleBtn': 'Masuk dengan Google',
       'login.connecting': 'Menghubungkan ke Google...',
+      'login.consent': 'Dengan masuk, Anda menyetujui <a href="Terms of Service.html" target="_blank" rel="noopener">Ketentuan Layanan</a> dan <a href="Privacy Policy.html" target="_blank" rel="noopener">Kebijakan Privasi</a> Farvion.',
       'settings.title': 'Pengaturan',
       'settings.language': 'Pilih bahasa',
       'settings.logout': 'Keluar',
@@ -2808,6 +2823,7 @@
       'login.desc': 'Sign in with your Google account to start chatting with Farvion, your AI assistant for everything.',
       'login.googleBtn': 'Sign in with Google',
       'login.connecting': 'Connecting to Google...',
+      'login.consent': 'By signing in, you agree to Farvion\'s <a href="Terms of Service.html" target="_blank" rel="noopener">Terms of Service</a> and <a href="Privacy Policy.html" target="_blank" rel="noopener">Privacy Policy</a>.',
       'settings.title': 'Settings',
       'settings.language': 'Select language',
       'settings.logout': 'Logout',
