@@ -6129,10 +6129,10 @@
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
       try {
         const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
             body: JSON.stringify(payload),
             signal: controller.signal
           }
@@ -6148,14 +6148,16 @@
         // dengan jeda singkat. Error lain (400, 401, dll) tidak akan membaik
         // dengan retry, jadi langsung menyerah.
         const retryable = res.status === 429 || res.status >= 500;
-        lastError = { status: res.status };
+        let bodyText = '';
+        try{ bodyText = await res.text(); } catch(_){}
+        lastError = { status: res.status, bodyText };
         if(!retryable || attempt === maxRetries) break;
         await new Promise(r => setTimeout(r, 800 * (attempt + 1))); // backoff singkat: 800ms, 1600ms, ...
       } catch(err){
         clearTimeout(timeoutId);
         // AbortError (timeout) atau error jaringan — juga layak di-retry sekali
         // lagi sebelum benar-benar menyerah.
-        lastError = { err };
+        lastError = { err: (err && err.message) ? err.message : String(err) };
         if(attempt === maxRetries) break;
         await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
       }
@@ -6720,10 +6722,10 @@
     for(let attempt = 0; attempt < maxAttempts; attempt++){
       try {
         const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_CHAT_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_CHAT_MODEL}:streamGenerateContent?alt=sse`,
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
             body: JSON.stringify({
               contents,
               systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -6738,23 +6740,35 @@
           break;
         }
         const retryable = res.status === 429 || res.status >= 500;
-        lastFailure = { status: res.status };
+        let bodyText = '';
+        try{ bodyText = await res.text(); } catch(_){}
+        lastFailure = { status: res.status, bodyText };
         if(!retryable || attempt === maxAttempts - 1) break;
         await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
       } catch(err){
-        lastFailure = { err };
+        lastFailure = { err: (err && err.message) ? err.message : String(err) };
         if(attempt === maxAttempts - 1) break;
         await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
       }
     }
 
     if(!response){
-      // Semua percobaan gagal — tampilkan pesan yang ramah tanpa detail teknis
-      // (kode status HTTP, pesan error mentah, dll) ke user. Detail lengkapnya
-      // tetap dicatat ke console untuk keperluan debugging developer.
+      // Semua percobaan gagal — tampilkan pesan yang ramah ke user, TAPI
+      // sementara (mode debug) kita tempelkan juga detail teknis mentah
+      // (kode status HTTP + body respons Google) supaya bisa didiagnosis
+      // langsung dari HP tanpa perlu komputer/DevTools.
+      // TODO: hapus blok debugDetail ini setelah masalah quota/API key selesai.
       console.error('[Farvion] streamGeminiReply gagal setelah retry:', lastFailure);
       conv.messages.pop(); // remove loading placeholder
-      conv.messages.push({ role:'ai', text: t('errors.geminiGeneric'), error:true });
+      let debugDetail = '';
+      if(lastFailure){
+        if(lastFailure.status){
+          debugDetail = `\n\n[DEBUG] HTTP ${lastFailure.status}\n${(lastFailure.bodyText || '(tanpa body)').slice(0, 500)}`;
+        } else if(lastFailure.err){
+          debugDetail = `\n\n[DEBUG] Network error: ${lastFailure.err}`;
+        }
+      }
+      conv.messages.push({ role:'ai', text: t('errors.geminiGeneric') + debugDetail, error:true });
       renderChat();
       return;
     }
