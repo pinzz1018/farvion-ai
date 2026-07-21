@@ -2254,7 +2254,7 @@
               <button class="attach-btn" onclick="openAttachSheet()" aria-label="Opsi lainnya" title="Opsi lainnya" data-i18n-aria="a11y.moreOptions" data-i18n-title="a11y.moreOptions">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
               </button>
-              <div class="composer-model-pill" onclick="openModelSheet()">Farvion Nova 1.0</div>
+              <div class="composer-model-pill" id="composerModelPill" onclick="openModelSheet()">Farvion Nova 1.0</div>
             </div>
             <button class="send-btn" id="sendBtn" onclick="sendMessage()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
@@ -2542,16 +2542,8 @@
   </div>
 
   <div class="sheet-scroll" id="modelSheetScroll">
-    <div class="model-option-list">
-      <div class="model-option active" onclick="closeModelSheet()">
-        <div class="model-option-body">
-          <div class="model-option-name">Farvion Nova 1.0</div>
-          <div class="model-option-sub" data-i18n="modelSheet.sub">Cepat & efisien untuk penggunaan sehari-hari</div>
-        </div>
-        <div class="model-option-check">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-      </div>
+    <div class="model-option-list" id="modelOptionList">
+      <!-- Diisi secara dinamis oleh renderModelSheetOptions() -->
     </div>
   </div>
 </div>
@@ -5552,6 +5544,14 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    // Set teks pill composer & isi bottom sheet model sesuai pilihan tersimpan
+    // (atau default Farvion Nova 1.0 kalau belum pernah memilih sebelumnya).
+    const initialModelPill = document.getElementById('composerModelPill');
+    if(initialModelPill && FARVION_CHAT_MODELS[selectedFarvionModelId]){
+      initialModelPill.textContent = FARVION_CHAT_MODELS[selectedFarvionModelId].label;
+    }
+    renderModelSheetOptions();
+
     const chatInnerEl = document.getElementById('chatInner');
     if(!chatInnerEl) return;
 
@@ -6115,7 +6115,60 @@
   // lambat (>1 menit) atau gagal (MALFORMED_FUNCTION_CALL) saat diminta membuat
   // function call, sedangkan gemini-2.5-flash lebih stabil untuk kasus ini.
   const GEMINI_TOOL_MODEL = 'gemini-2.5-flash';
-  const GEMINI_CHAT_MODEL = 'gemini-3.5-flash';
+
+  // Daftar model chat yang bisa dipilih user lewat bottom sheet. "id" dipakai
+  // sebagai key penyimpanan & lookup, "label" yang tampil ke user (branding
+  // Farvion), "underlyingModel" adalah model Gemini asli yang benar-benar dipanggil.
+  const FARVION_CHAT_MODELS = {
+    'farvion-nova-1.0': { label: 'Farvion Nova 1.0', underlyingModel: 'gemini-3.5-flash' },
+    'farvion-1.0-flash': { label: 'Farvion 1.0 Flash', underlyingModel: 'gemini-2.5-flash' }
+  };
+  const DEFAULT_FARVION_CHAT_MODEL_ID = 'farvion-nova-1.0';
+
+  let selectedFarvionModelId = DEFAULT_FARVION_CHAT_MODEL_ID;
+  try{
+    const savedModelId = localStorage.getItem('farvion_selected_chat_model');
+    if(savedModelId && FARVION_CHAT_MODELS[savedModelId]) selectedFarvionModelId = savedModelId;
+  } catch(e){ /* localStorage tidak tersedia, pakai default */ }
+
+  // Getter dipakai di tempat pemanggilan API supaya selalu ambil model Gemini
+  // asli yang sesuai dengan pilihan user saat ini (bukan konstanta statis).
+  function getGeminiChatModel(){
+    const entry = FARVION_CHAT_MODELS[selectedFarvionModelId] || FARVION_CHAT_MODELS[DEFAULT_FARVION_CHAT_MODEL_ID];
+    return entry.underlyingModel;
+  }
+
+  function selectFarvionModel(modelId){
+    if(!FARVION_CHAT_MODELS[modelId]) return;
+    selectedFarvionModelId = modelId;
+    try{ localStorage.setItem('farvion_selected_chat_model', modelId); } catch(e){}
+    const pillEl = document.getElementById('composerModelPill');
+    if(pillEl) pillEl.textContent = FARVION_CHAT_MODELS[modelId].label;
+    renderModelSheetOptions();
+    closeModelSheet();
+  }
+
+  // Bangun ulang daftar opsi di dalam bottom sheet model, menandai opsi yang
+  // sedang aktif dipilih dengan class "active" + ikon centang.
+  function renderModelSheetOptions(){
+    const listEl = document.getElementById('modelOptionList');
+    if(!listEl) return;
+    listEl.innerHTML = Object.keys(FARVION_CHAT_MODELS).map(modelId => {
+      const entry = FARVION_CHAT_MODELS[modelId];
+      const isActive = modelId === selectedFarvionModelId;
+      return `
+        <div class="model-option${isActive ? ' active' : ''}" onclick="selectFarvionModel('${modelId}')">
+          <div class="model-option-body">
+            <div class="model-option-name">${entry.label}</div>
+            <div class="model-option-sub" data-i18n="modelSheet.sub">Cepat & efisien untuk penggunaan sehari-hari</div>
+          </div>
+          <div class="model-option-check">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>`;
+    }).join('');
+    if(typeof applyI18n === 'function') applyI18n();
+  }
 
   // Helper terpusat untuk memanggil Gemini API (non-stream) dengan timeout dan
   // retry otomatis. Dipakai supaya error rate-limit (429) atau gangguan server
@@ -6722,7 +6775,7 @@
     for(let attempt = 0; attempt < maxAttempts; attempt++){
       try {
         const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_CHAT_MODEL}:streamGenerateContent?alt=sse`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${getGeminiChatModel()}:streamGenerateContent?alt=sse`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
