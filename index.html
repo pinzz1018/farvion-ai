@@ -3069,53 +3069,53 @@
     document.getElementById('loginLoading').style.display = 'block';
     document.getElementById('loginError').style.display = 'none';
 
-    // Di browser mobile (terutama Chrome Android), signInWithPopup sering
-    // "hang" diam-diam — popup-nya kebuka tapi promise-nya tidak pernah
-    // resolve ATAU reject, jadi .catch() di bawah pun tidak pernah jalan dan
-    // UI macet permanen di teks loading. Redirect jauh lebih reliable untuk
-    // mobile, jadi langsung pakai itu tanpa mencoba popup dulu.
-    if(isMobileBrowser()){
-      // Tandai di sessionStorage bahwa kita akan pergi ke redirect Google.
-      // Flag ini dibaca lagi setelah reload (lihat FARVION_REDIRECT_FLAG di
-      // bawah) untuk mendeteksi kasus "sudah balik dari Google tapi auth state
-      // tetap kosong" — yaitu saat redirect-nya sendiri berhasil (user sempat
-      // pilih akun di Google) tapi Firebase gagal membaca kembali state
-      // pending-nya sesudah kembali ke domain app (biasanya karena browser
-      // memblokir storage/cookie lintas domain ke authDomain Firebase).
-      try { sessionStorage.setItem(FARVION_REDIRECT_FLAG, String(Date.now())); } catch(e){}
+    // Popup dipakai sebagai jalur utama di SEMUA device (termasuk mobile).
+    // Alasan: signInWithRedirect butuh menyimpan state pending di storage
+    // lintas reload/domain sebelum pergi ke Google, lalu membacanya lagi
+    // setelah kembali. Kalau browser melakukan auto-refresh, membersihkan
+    // sessionStorage, atau memblokir storage/cookie lintas domain ke
+    // authDomain Firebase, proses itu gagal secara DIAM-DIAM (redirect-
+    // silent-fail) — user sudah login di Google tapi app tidak pernah tahu.
+    // Popup tidak reload halaman app sama sekali sehingga tidak rentan
+    // terhadap kelas masalah ini.
+    //
+    // Watchdog 12 detik: kalau signInWithPopup tidak pernah resolve/reject
+    // (kasus "hang diam-diam" yang pernah dilaporkan di beberapa Chrome
+    // Android), tampilkan pesan error yang jelas alih-alih macet permanen
+    // di teks loading.
+    let settled = false;
+    const popupWatchdog = setTimeout(() => {
+      if(settled) return;
+      settled = true;
+      showAuthError({
+        code: 'auth/popup-no-response',
+        message: 'Jendela login Google tidak merespons. Pastikan pop-up tidak diblokir browser, lalu coba lagi. Kalau masih macet, coba buka Farvion di tab biasa (bukan mode InPrivate/Incognito) atau browser lain.'
+      });
+    }, 12000);
 
-      // Watchdog: kalau dalam 6 detik browser belum benar-benar berpindah
-      // halaman (redirect ke Google), kemungkinan besar signInWithRedirect
-      // gagal secara diam-diam (tanpa promise reject maupun throw) — biasanya
-      // karena Chrome memblokir storage/cookie lintas domain yang dibutuhkan
-      // Firebase Auth. Tampilkan pesan yang jelas alih-alih macet selamanya.
-      const redirectWatchdog = setTimeout(() => {
-        showAuthError({
-          code: 'auth/redirect-did-not-start',
-          message: 'Google sign-in tidak merespons. Kemungkinan browser memblokir penyimpanan lintas domain yang dibutuhkan Firebase. Coba nonaktifkan mode "Block third-party cookies" di pengaturan Chrome, atau coba browser lain.'
-        });
-      }, 6000);
-
-      try {
-        auth.signInWithRedirect(googleProvider).catch(err => {
-          clearTimeout(redirectWatchdog);
-          showAuthError(err);
-        });
-      } catch(syncErr){
-        // Tangkap juga error yang dilempar secara synchronous (bukan lewat
-        // promise rejection) — ini bisa terjadi kalau browser memblokir
-        // storage/cookie lintas domain yang dibutuhkan Firebase Auth.
-        clearTimeout(redirectWatchdog);
-        showAuthError(syncErr);
-      }
-      return;
-    }
-
-    // Di desktop, popup lebih cepat & tetap dipakai sebagai jalur utama,
-    // dengan fallback ke redirect kalau memang diblokir/tidak didukung.
     auth.signInWithPopup(googleProvider)
+      .then(result => {
+        if(settled) return;
+        settled = true;
+        clearTimeout(popupWatchdog);
+        // onAuthStateChanged di bawah akan menangani tampilan setelah ini
+      })
       .catch(err => {
-        if(err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment' || err.code === 'auth/popup-closed-by-user'){
+        if(settled) return;
+        settled = true;
+        clearTimeout(popupWatchdog);
+        if(err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request'){
+          // User sendiri yang menutup popup — bukan error teknis, jangan
+          // tampilkan sebagai kegagalan, cukup reset tombol.
+          document.getElementById('googleLoginBtn').disabled = false;
+          document.getElementById('loginLoading').style.display = 'none';
+          return;
+        }
+        if(err.code === 'auth/popup-blocked' || err.code === 'auth/operation-not-supported-in-this-environment'){
+          // Hanya fallback ke redirect kalau popup memang tidak bisa dibuka
+          // sama sekali (diblokir browser / environment tidak mendukung
+          // window.open, misal beberapa in-app webview).
+          try { sessionStorage.setItem(FARVION_REDIRECT_FLAG, String(Date.now())); } catch(e){}
           auth.signInWithRedirect(googleProvider).catch(showAuthError);
         } else {
           showAuthError(err);
