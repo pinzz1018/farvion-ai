@@ -362,15 +362,48 @@
     display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding: 6px 0;
   }
   /* Baris berisi icon tool statis + teks status, sejajar horizontal.
-     Icon-nya TIDAK ikut animasi shimmer/spin — dia statis, warna biru khas
-     Farvion, dan bentuknya berubah tergantung tool apa yang sedang dipanggil
-     (lihat toolIconSvg()). Pinwheel yang berputar tetap ada terpisah di bawah. */
+     Ini adalah <button> — bisa diklik untuk membuka modal detail penggunaan
+     tool (lihat openToolDetailModal). Icon-nya TIDAK ikut animasi shimmer/spin
+     — dia statis, warna biru khas Farvion, dan bentuknya berubah tergantung
+     tool apa yang sedang dipanggil (lihat toolIconSvg()). Pinwheel yang
+     berputar tetap ada terpisah di bawah. */
   .tool-status-row{
     display:flex;
     flex-direction:row;
     align-items:center;
     gap:6px;
     max-width:100%;
+    border:none;
+    background:transparent;
+    padding: 4px 6px 4px 4px;
+    margin: -4px -6px -4px -4px;
+    border-radius: 999px;
+    cursor:pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s ease;
+    font: inherit;
+    text-align:left;
+  }
+  .tool-status-row:hover,
+  .tool-status-row:active{
+    background: var(--terracotta-pale);
+  }
+  .tool-status-row-done{
+    background: var(--terracotta-pale);
+    padding: 6px 12px 6px 8px;
+    margin: 0;
+  }
+  .tool-status-row-done:hover,
+  .tool-status-row-done:active{
+    background: var(--terracotta-pale);
+    filter: brightness(0.97);
+  }
+  .tool-status-text-done{
+    color: var(--terracotta-deep) !important;
+    background:none !important;
+    -webkit-text-fill-color: var(--terracotta-deep);
+    animation:none !important;
+    white-space:nowrap;
   }
   .tool-status-icon{
     width:15px;
@@ -626,6 +659,127 @@
     margin: 0 0 18px 0;
   }
   .modal-box a{ color: var(--terracotta-deep); }
+
+  /* ===== Modal detail penggunaan tool (dibuka dengan klik pill status) =====
+     Beda dari .modal-overlay biasa: pakai animasi scale+fade yang originnya
+     dinamis (transform-origin di-set lewat JS sesuai posisi pill yang diklik),
+     jadi kartu terasa "muncul dari" pill itu sendiri, bukan dari kosong di
+     tengah layar. Transisinya pendek & dengan sedikit overshoot (cubic-bezier
+     custom) supaya berasa smooth dan hidup, bukan modal generik/statis. */
+  .tool-detail-overlay{
+    position:fixed; inset:0;
+    background: rgba(43,38,32,0);
+    display:none;
+    align-items:center; justify-content:center;
+    z-index: 200;
+    padding: 24px;
+    transition: background 0.24s ease;
+  }
+  .tool-detail-overlay.visible{
+    display:flex;
+    background: rgba(43,38,32,0.38);
+    backdrop-filter: blur(2px);
+  }
+  .tool-detail-card{
+    background: var(--paper);
+    border-radius: 20px;
+    padding: 22px;
+    width: 380px;
+    max-width: 100%;
+    max-height: 78vh;
+    display:flex;
+    flex-direction:column;
+    box-shadow: 0 24px 60px rgba(43,38,32,0.28);
+    opacity: 0;
+    transform: scale(0.82);
+    transition: opacity 0.26s cubic-bezier(.34,1.4,.64,1), transform 0.26s cubic-bezier(.34,1.4,.64,1);
+  }
+  .tool-detail-overlay.visible .tool-detail-card{
+    opacity: 1;
+    transform: scale(1);
+  }
+  .tool-detail-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom: 16px;
+    flex: 0 0 auto;
+  }
+  .tool-detail-header h3{
+    font-family:'Source Serif 4', serif;
+    font-size: 17px;
+    margin: 0;
+    color: var(--ink);
+  }
+  .tool-detail-close{
+    width: 30px; height:30px;
+    border-radius: 999px;
+    border:none;
+    background: var(--terracotta-pale);
+    color: var(--terracotta-deep);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    flex: 0 0 auto;
+  }
+  .tool-detail-close svg{ width:16px; height:16px; }
+  .tool-detail-list{
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    gap: 4px;
+    margin: 0 -6px;
+    padding: 0 6px;
+  }
+  .tool-detail-step{
+    display:flex;
+    gap:12px;
+    padding: 12px 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  .tool-detail-step:last-child{ border-bottom:none; }
+  .tool-detail-step-icon{
+    width:28px; height:28px;
+    border-radius: 999px;
+    background: var(--terracotta-pale);
+    color: var(--terracotta);
+    display:flex; align-items:center; justify-content:center;
+    flex:0 0 auto;
+  }
+  .tool-detail-step-icon svg{ width:15px; height:15px; }
+  .tool-detail-step-body{
+    flex:1 1 auto;
+    min-width:0;
+  }
+  .tool-detail-step-name{
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 2px;
+    word-break: break-word;
+  }
+  .tool-detail-step-status{
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .tool-detail-step-status.in-progress{
+    color: var(--terracotta-deep);
+  }
+  .tool-detail-params{
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    line-height:1.6;
+    word-break: break-word;
+  }
+  .tool-detail-params .param-row{ display:flex; gap:6px; }
+  .tool-detail-params .param-key{ color: var(--terracotta-deep); flex:0 0 auto; }
+
   .modal-input{
     width:100%;
     padding: 11px 14px;
@@ -2060,6 +2214,18 @@
   </div>
 </div>
 
+<div class="tool-detail-overlay" id="toolDetailOverlay" onclick="if(event.target===this) closeToolDetailModal()">
+  <div class="tool-detail-card" id="toolDetailCard">
+    <div class="tool-detail-header">
+      <h3 id="toolDetailTitle" data-i18n="tools.detailTitle">Detail penggunaan tool</h3>
+      <button type="button" class="tool-detail-close" onclick="closeToolDetailModal()" aria-label="Tutup">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="tool-detail-list" id="toolDetailList"></div>
+  </div>
+</div>
+
 <!-- BOTTOM SHEET (tombol + di composer) -->
 <div class="sheet-overlay" id="sheetOverlay" onclick="closeAttachSheet()"></div>
 <div class="bottom-sheet" id="attachSheet">
@@ -2398,6 +2564,15 @@
       'repo.private': 'Privat',
       'repo.public': 'Publik',
 
+      'tools.usedTools': 'Menggunakan {count} tool',
+      'tools.usedToolsSingle': 'Menggunakan tool',
+      'tools.detailTitle': 'Detail penggunaan tool',
+      'tools.detailClose': 'Tutup',
+      'tools.stepInProgress': 'Sedang berjalan…',
+      'tools.stepDone': 'Selesai',
+      'tools.paramLabel': 'Parameter',
+      'tools.noParams': 'Tidak ada parameter tambahan.',
+
       'drive.loading': 'Memuat Google Drive…',
       'drive.loadingContents': 'Memuat isi folder…',
       'drive.loadingFile': 'Memuat isi file…',
@@ -2538,6 +2713,15 @@
       'repo.attachedToast': 'File attached to chat.',
       'repo.private': 'Private',
       'repo.public': 'Public',
+
+      'tools.usedTools': 'Used {count} tools',
+      'tools.usedToolsSingle': 'Used a tool',
+      'tools.detailTitle': 'Tool usage detail',
+      'tools.detailClose': 'Close',
+      'tools.stepInProgress': 'In progress…',
+      'tools.stepDone': 'Done',
+      'tools.paramLabel': 'Parameters',
+      'tools.noParams': 'No additional parameters.',
 
       'drive.loading': 'Loading Google Drive…',
       'drive.loadingContents': 'Loading folder contents…',
@@ -5224,6 +5408,101 @@
     document.getElementById('feedbackDropdownBtn').classList.remove('open');
   }
 
+  // ===== Modal detail penggunaan tool =====
+  // Dibuka saat pill status tool (baik yang masih loading maupun yang sudah
+  // selesai) diklik. Nampilin timeline semua langkah tool yang tercatat di
+  // msg.toolHistory untuk pesan tersebut.
+  let toolDetailTargetIndex = null;
+  let toolDetailLiveRefreshTimer = null;
+
+  function toolDisplayName(toolName){
+    const map = {
+      'read_github_file': 'read_github_file',
+      'list_github_directory': 'list_github_directory',
+      'list_github_repos': 'list_github_repos',
+      'push_file_to_github': 'push_file_to_github'
+    };
+    return map[toolName] || (toolName || '—');
+  }
+
+  function renderToolDetailParams(args){
+    const entries = Object.entries(args || {}).filter(([k]) => k !== 'confirmation_message');
+    if(!entries.length) return '<div class="tool-detail-params">' + t('tools.noParams') + '</div>';
+    const rows = entries.map(([k, v]) => {
+      const val = typeof v === 'string' ? v : JSON.stringify(v);
+      return '<div class="param-row"><span class="param-key">' + escapeHtml(k) + ':</span><span>' + escapeHtml(String(val)) + '</span></div>';
+    }).join('');
+    return '<div class="tool-detail-params">' + rows + '</div>';
+  }
+
+  function renderToolDetailList(){
+    if(toolDetailTargetIndex === null || !currentConvId) return;
+    const msg = conversations[currentConvId].messages[toolDetailTargetIndex];
+    const list = document.getElementById('toolDetailList');
+    if(!msg || !msg.toolHistory || !msg.toolHistory.length){
+      list.innerHTML = '';
+      return;
+    }
+    list.innerHTML = msg.toolHistory.map(step => {
+      const statusLabel = step.done ? t('tools.stepDone') : t('tools.stepInProgress');
+      const statusClass = step.done ? '' : ' in-progress';
+      return `
+        <div class="tool-detail-step">
+          <div class="tool-detail-step-icon">${toolIconSvg(step.tool)}</div>
+          <div class="tool-detail-step-body">
+            <div class="tool-detail-step-name">${escapeHtml(toolDisplayName(step.tool))}</div>
+            <div class="tool-detail-step-status${statusClass}">${escapeHtml(step.status || '')} · ${statusLabel}</div>
+            ${renderToolDetailParams(step.args)}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function openToolDetailModal(msgIndex, triggerEl){
+    toolDetailTargetIndex = msgIndex;
+    const overlay = document.getElementById('toolDetailOverlay');
+    const card = document.getElementById('toolDetailCard');
+
+    // Set transform-origin sesuai posisi pill yang diklik (relatif terhadap
+    // card itu sendiri) supaya animasi scale terasa "muncul dari" pill,
+    // bukan dari titik acak di tengah layar.
+    if(triggerEl && triggerEl.getBoundingClientRect){
+      const rect = triggerEl.getBoundingClientRect();
+      const originX = rect.left + rect.width / 2;
+      const originY = rect.top + rect.height / 2;
+      card.style.transformOrigin = originX + 'px ' + originY + 'px';
+    } else {
+      card.style.transformOrigin = '50% 50%';
+    }
+
+    renderToolDetailList();
+    overlay.classList.add('visible');
+
+    // Kalau pesan yang lagi dibuka detailnya masih loading (tool masih
+    // berjalan), refresh isi modal berkala supaya user lihat progres live
+    // tanpa perlu tutup-buka modal lagi.
+    clearInterval(toolDetailLiveRefreshTimer);
+    toolDetailLiveRefreshTimer = setInterval(() => {
+      if(toolDetailTargetIndex === null || !currentConvId){
+        clearInterval(toolDetailLiveRefreshTimer);
+        return;
+      }
+      const msg = conversations[currentConvId].messages[toolDetailTargetIndex];
+      if(!msg || !msg.loading){
+        clearInterval(toolDetailLiveRefreshTimer);
+        return;
+      }
+      renderToolDetailList();
+    }, 400);
+  }
+
+  function closeToolDetailModal(){
+    document.getElementById('toolDetailOverlay').classList.remove('visible');
+    clearInterval(toolDetailLiveRefreshTimer);
+    toolDetailTargetIndex = null;
+  }
+
   function openFeedbackModal(msgIndex, type){
     feedbackTargetIndex = msgIndex;
     feedbackTargetType = type;
@@ -5352,7 +5631,7 @@
         ` : '';
         row.innerHTML = `
           <div class="msg-ai-col">
-            <div class="msg-bubble">${showPinwheel ? '<div class="typing-dots">' + (msg.toolStatus ? '<div class="tool-status-row"><div class="tool-status-icon">' + toolIconSvg(msg.toolName) + '</div><div class="tool-status-text">' + escapeHtml(msg.toolStatus) + '</div></div>' : '') + '<div class="loading-pinwheel">' + pinwheelLogoSvg() + '</div></div>' : (msg.error ? '<div class="error-note">' + escapeHtml(msg.text) + '</div>' : renderMarkdown(msg.text))}</div>
+            <div class="msg-bubble">${showPinwheel ? '<div class="typing-dots">' + (msg.toolStatus ? '<button type="button" class="tool-status-row" onclick="openToolDetailModal(' + msgIndex + ', this)"><div class="tool-status-icon">' + toolIconSvg(msg.toolName) + '</div><div class="tool-status-text">' + escapeHtml(msg.toolStatus) + '</div></button>' : '') + '<div class="loading-pinwheel">' + pinwheelLogoSvg() + '</div></div>' : (msg.error ? '<div class="error-note">' + escapeHtml(msg.text) + '</div>' : (msg.toolHistory && msg.toolHistory.length ? '<button type="button" class="tool-status-row tool-status-row-done" onclick="openToolDetailModal(' + msgIndex + ', this)"><div class="tool-status-icon">' + toolIconSvg(msg.toolHistory[msg.toolHistory.length-1].tool) + '</div><div class="tool-status-text tool-status-text-done">' + (msg.toolHistory.length === 1 ? t('tools.usedToolsSingle') : t('tools.usedTools').replace('{count}', msg.toolHistory.length)) + '</div></button>' : '') + renderMarkdown(msg.text))}</div>
             ${actionsHtml}
           </div>
         `;
@@ -5451,7 +5730,7 @@
 
   // Instruksi khusus untuk turn deteksi tool-call: menjelaskan semua tool GitHub
   // yang tersedia (3 read-only + 1 tulis/push), tidak menggantikan system prompt utama.
-  const GITHUB_TOOL_SYSTEM_ADDENDUM = "ATURAN STATUS TEXT — SETIAP kali kamu memanggil salah satu tool di bawah (function call apapun), kamu WAJIB menyertakan SATU baris teks singkat (maksimal 6 kata, bahasa Indonesia, present tense/progresif, TANPA tanda kutip) sebagai bagian 'text' pada respons yang SAMA, tepat sebelum function call tersebut — ini akan ditampilkan ke user sebagai status \\\"sedang apa\\\" secara real-time (contoh: 'Melihat daftar repository...', 'Membuka folder src...', 'Membaca file utils.js...', 'Menyiapkan push ke GitHub...'). Buat teksnya spesifik sesuai argumen yang kamu kirim (nama repo/file/folder), JANGAN generic. Ini WAJIB dilakukan di setiap iterasi tool call, termasuk kalau kamu memanggil tool berkali-kali secara berurutan. JANGAN taruh teks status ini di dalam jawaban final (setelah semua tool selesai) — hanya di respons yang mengandung function call.\\n\\nPENTING — kamu WAJIB menggunakan tool berikut kapan pun relevan, JANGAN pernah menjawab dengan teks biasa yang menyarankan user membuka GitHub secara manual, memakai GitHub CLI, atau mengecek sendiri — kamu punya akses langsung lewat tool ini:\n1. list_github_repos — melihat daftar repository milik user. WAJIB panggil ini kalau user bertanya repo apa saja yang dia punya/miliki.\n2. list_github_directory — melihat isi sebuah folder (file & subfolder) di dalam repo tertentu. WAJIB panggil ini kalau user minta melihat isi repo/folder tertentu. Kalau path tidak disebutkan, kosongkan path (artinya root repo).\n3. read_github_file — membaca isi satu file teks di dalam repo. WAJIB panggil ini kalau user minta melihat/membaca isi sebuah file di GitHub.\n4. push_file_to_github — commit & push (buat baru atau menimpa) satu file ke repo. Panggil ini HANYA kalau user secara jelas meminta agar sesuatu di-push/di-commit/disimpan ke GitHub/repo.\n\nUntuk tool nomor 1-3: ini operasi baca saja yang aman, panggil langsung begitu maksud user jelas, TANPA perlu konfirmasi tambahan, dan TANPA bertanya balik ke user dulu.\nUntuk tool nomor 4 (push_file_to_github): ini mengubah isi repo, jadi kalau user meminta push tapi belum jelas nama repo (format owner+repo) atau nama file/path-nya, JANGAN memanggil fungsi ini — sebaliknya balas dengan teks biasa yang menanyakan repo dan path/nama file yang dimaksud. Kalau semua informasi sudah jelas, panggil dengan argumen lengkap termasuk 'confirmation_message': kalimat singkat berbahasa Indonesia yang santai untuk menanyakan persetujuan user sebelum push benar-benar dilakukan (misal: 'Aku akan commit & push file utils.js ke repo pinzz/codspire, setuju?').\n\nATURAN KHUSUS read_github_file — SANGAT PENTING: setelah tool ini mengembalikan isi sebuah file, JANGAN PERNAH menempelkan ulang (paste/echo) isi file mentah tersebut ke jawaban akhir kamu, apalagi dalam code block panjang. Isi file yang dikirim balik ke kamu itu HANYA konteks internal untuk kamu baca dan pahami, BUKAN sesuatu yang harus ditampilkan verbatim ke user. Kecuali user secara eksplisit minta \\\"tampilkan/tunjukkan/copy-paste kode lengkapnya\\\", selalu balas dengan bahasa natural yang menjelaskan apa yang kamu temukan di file itu — misalnya struktur/fitur yang ada, fungsi-fungsi penting, teknologi yang dipakai, bagian yang relevan dengan pertanyaan user, atau ringkasan singkat isinya. Kalau user cuma bilang \\\"baca file X di repo Y\\\" tanpa instruksi lanjutan, anggap itu sebagai permintaan untuk kamu MEMAHAMI file itu lalu memberi ringkasan/insight singkat tentang isinya (mis. \\\"ini file utama proyeknya, isinya ada bagian X, Y, Z...\\\"), BUKAN permintaan untuk menampilkan seluruh kode ke chat. Kalau user lanjut bertanya sesuatu yang spesifik soal file itu setelah dibaca, jawab pertanyaannya berdasarkan isi file, tetap tanpa menempelkan kode secara utuh — kutip hanya potongan kecil yang relevan kalau memang perlu.\n\nKalau owner/username GitHub tidak disebutkan user secara eksplisit untuk tool manapun, gunakan username GitHub milik user yang sedang terhubung (akan diberi tahu di bawah, kalau ada) sebagai default. Ingat: user SUDAH menghubungkan akun GitHub-nya ke Farvion, jadi kamu benar-benar punya akses — jangan pernah berperilaku seolah kamu tidak punya akses.";
+  const GITHUB_TOOL_SYSTEM_ADDENDUM = "ATURAN STATUS TEXT — SETIAP kali kamu memanggil salah satu tool di bawah (function call apapun), kamu WAJIB menyertakan SATU baris teks singkat (maksimal 6 kata, bahasa Indonesia, present tense/progresif, TANPA tanda kutip) sebagai bagian 'text' pada respons yang SAMA, tepat sebelum function call tersebut — ini akan ditampilkan ke user sebagai status \\\"sedang apa\\\" secara real-time (contoh: 'Melihat daftar repository...', 'Membuka folder src...', 'Membaca file utils.js...', 'Menyiapkan push ke GitHub...'). Buat teksnya spesifik sesuai argumen yang kamu kirim (nama repo/file/folder), JANGAN generic. Ini WAJIB dilakukan di setiap iterasi tool call, termasuk kalau kamu memanggil tool berkali-kali secara berurutan. JANGAN taruh teks status ini di dalam jawaban final (setelah semua tool selesai) — hanya di respons yang mengandung function call.\\n\\nPENTING — kamu WAJIB menggunakan tool berikut kapan pun relevan, JANGAN pernah menjawab dengan teks biasa yang menyarankan user membuka GitHub secara manual, memakai GitHub CLI, atau mengecek sendiri — kamu punya akses langsung lewat tool ini:\n1. list_github_repos — melihat daftar repository milik user. WAJIB panggil ini kalau user bertanya repo apa saja yang dia punya/miliki.\n2. list_github_directory — melihat isi sebuah folder (file & subfolder) di dalam repo tertentu. WAJIB panggil ini kalau user minta melihat isi repo/folder tertentu. Kalau path tidak disebutkan, kosongkan path (artinya root repo).\n3. read_github_file — membaca isi satu file teks di dalam repo. WAJIB panggil ini kalau user minta melihat/membaca isi sebuah file di GitHub.\n4. push_file_to_github — commit & push (buat baru atau menimpa) satu file ke repo. Panggil ini HANYA kalau user secara jelas meminta agar sesuatu di-push/di-commit/disimpan ke GitHub/repo.\n\nUntuk tool nomor 1-3: ini operasi baca saja yang aman, panggil langsung begitu maksud user jelas, TANPA perlu konfirmasi tambahan, dan TANPA bertanya balik ke user dulu.\nUntuk tool nomor 4 (push_file_to_github): ini mengubah isi repo, jadi kalau user meminta push tapi belum jelas nama repo (format owner+repo) atau nama file/path-nya, JANGAN memanggil fungsi ini — sebaliknya balas dengan teks biasa yang menanyakan repo dan path/nama file yang dimaksud. Kalau semua informasi sudah jelas, panggil dengan argumen lengkap termasuk 'confirmation_message': kalimat singkat berbahasa Indonesia yang santai untuk menanyakan persetujuan user sebelum push benar-benar dilakukan (misal: 'Aku akan commit & push file utils.js ke repo pinzz/codspire, setuju?').\n\nATURAN KHUSUS read_github_file — SANGAT PENTING: setelah tool ini mengembalikan isi sebuah file, JANGAN PERNAH menempelkan ulang (paste/echo) isi file mentah tersebut ke jawaban akhir kamu, apalagi dalam code block panjang. Isi file yang dikirim balik ke kamu itu HANYA konteks internal untuk kamu baca dan pahami, BUKAN sesuatu yang harus ditampilkan verbatim ke user. Kecuali user secara eksplisit minta \\\"tampilkan/tunjukkan/copy-paste kode lengkapnya\\\", selalu balas dengan bahasa natural yang menjelaskan apa yang kamu temukan di file itu — misalnya struktur/fitur yang ada, fungsi-fungsi penting, teknologi yang dipakai, bagian yang relevan dengan pertanyaan user, atau ringkasan singkat isinya. Kalau user cuma bilang \\\"baca file X di repo Y\\\" tanpa instruksi lanjutan, anggap itu sebagai permintaan untuk kamu MEMAHAMI file itu lalu memberi ringkasan/insight singkat tentang isinya (mis. \\\"ini file utama proyeknya, isinya ada bagian X, Y, Z...\\\"), BUKAN permintaan untuk menampilkan seluruh kode ke chat. Kalau user lanjut bertanya sesuatu yang spesifik soal file itu setelah dibaca, jawab pertanyaannya berdasarkan isi file, tetap tanpa menempelkan kode secara utuh — kutip hanya potongan kecil yang relevan kalau memang perlu.\n\nKalau owner/username GitHub tidak disebutkan user secara eksplisit untuk tool manapun, kamu WAJIB menggunakan username GitHub milik user yang sedang terhubung (lihat hint di bawah) sebagai owner — JANGAN PERNAH menebak, mengarang, atau memakai username/akun GitHub lain siapapun itu (termasuk nama-nama yang muncul sebagai contoh format di deskripsi parameter tool — itu hanya contoh format penulisan, BUKAN akun sungguhan yang boleh dipakai). Owner HANYA boleh berbeda dari username yang terhubung kalau user secara eksplisit menyebut nama owner/organisasi lain di pesannya (mis. \"cek repo si X\" atau \"repo org Y\"). Ingat: user SUDAH menghubungkan akun GitHub-nya ke Farvion, jadi kamu benar-benar punya akses — jangan pernah berperilaku seolah kamu tidak punya akses.";
 
   const GITHUB_LIST_REPOS_TOOL_DECLARATION = {
     name: 'list_github_repos',
@@ -5465,7 +5744,7 @@
     parameters: {
       type: 'object',
       properties: {
-        owner: { type: 'string', description: 'Username/organisasi pemilik repo, mis. "pinzz1018".' },
+        owner: { type: 'string', description: 'Username/organisasi GitHub pemilik repo. WAJIB memakai username akun GitHub yang sedang terhubung (lihat hint di system prompt) kecuali user secara eksplisit menyebut owner/akun lain.' },
         repo: { type: 'string', description: 'Nama repository, mis. "codspire".' },
         path: { type: 'string', description: 'Path folder di dalam repo. Kosongkan ("") untuk root repo.' }
       },
@@ -5479,7 +5758,7 @@
     parameters: {
       type: 'object',
       properties: {
-        owner: { type: 'string', description: 'Username/organisasi pemilik repo, mis. "pinzz1018".' },
+        owner: { type: 'string', description: 'Username/organisasi GitHub pemilik repo. WAJIB memakai username akun GitHub yang sedang terhubung (lihat hint di system prompt) kecuali user secara eksplisit menyebut owner/akun lain.' },
         repo: { type: 'string', description: 'Nama repository, mis. "codspire".' },
         path: { type: 'string', description: 'Path file di dalam repo, mis. "src/utils.js".' }
       },
@@ -5493,7 +5772,7 @@
     parameters: {
       type: 'object',
       properties: {
-        owner: { type: 'string', description: 'Username/organisasi pemilik repo, mis. "pinzz1018".' },
+        owner: { type: 'string', description: 'Username/organisasi GitHub pemilik repo. WAJIB memakai username akun GitHub yang sedang terhubung (lihat hint di system prompt) kecuali user secara eksplisit menyebut owner/akun lain.' },
         repo: { type: 'string', description: 'Nama repository, mis. "codspire".' },
         path: { type: 'string', description: 'Path file di dalam repo, mis. "src/utils.js".' },
         content: { type: 'string', description: 'Isi lengkap file yang akan di-push (plain text, bukan base64).' },
@@ -5671,10 +5950,20 @@
       // Update bubble loading yang sedang tampil supaya menunjukkan status ini
       // (pinwheel tetap berputar, teks shimmer muncul di bawahnya) sebelum tool
       // benar-benar dieksekusi — biar user lihat progres real-time.
+      // toolHistory diakumulasi (bukan ditimpa) supaya kalau ada beberapa tool
+      // call berurutan dalam satu respons, semua langkahnya tercatat dan bisa
+      // dilihat lengkap lewat modal detail saat pill diklik.
       const loadingMsg = conv.messages.find(m => m.loading);
       if(loadingMsg){
         loadingMsg.toolStatus = toolStatus;
         loadingMsg.toolName = name;
+        if(!loadingMsg.toolHistory) loadingMsg.toolHistory = [];
+        loadingMsg.toolHistory.push({
+          tool: name,
+          args: callArgs,
+          status: toolStatus,
+          done: false
+        });
         renderChat();
       }
 
@@ -5704,6 +5993,12 @@
       usedAnyTool = true;
       const resultText = await executeGithubReadonlyTool(name, callArgs);
 
+      // Tandai langkah ini selesai di toolHistory (untuk ditampilkan di modal detail).
+      if(loadingMsg && loadingMsg.toolHistory && loadingMsg.toolHistory.length){
+        loadingMsg.toolHistory[loadingMsg.toolHistory.length - 1].done = true;
+        renderChat();
+      }
+
       contents = [
         ...contents,
         { role: 'model', parts: [{ functionCall: { name, args: callArgs } }] },
@@ -5720,11 +6015,15 @@
   // tool-calling) sebagai bubble AI biasa, lengkap dengan efek ngetik (typing queue).
   function finishGithubToolConversation(conv, finalText){
     const loadingIdx = conv.messages.findIndex(m => m.loading);
+    const finishedToolHistory = loadingIdx !== -1 ? conv.messages[loadingIdx].toolHistory : null;
     if(loadingIdx !== -1) conv.messages.splice(loadingIdx, 1);
     conv.messages.push({ role:'ai', text:'', streaming:true });
     renderChat();
     resetTypingState();
     const aiMsg = conv.messages[conv.messages.length - 1];
+    // Riwayat tool tetap disimpan di bubble final supaya pill "Selesai memakai tool"
+    // masih bisa diklik untuk melihat detail langkah-langkah yang sudah terjadi.
+    if(finishedToolHistory && finishedToolHistory.length) aiMsg.toolHistory = finishedToolHistory;
     updateStreamingBubble(finalText);
     return flushTypingQueue().then(() => {
       aiMsg.text = finalText;
