@@ -125,6 +125,7 @@
     align-items:center;
     justify-content: space-between;
     padding: 4px 4px 18px 4px;
+    flex-shrink: 0;
   }
 
   .close-sidebar-btn{
@@ -179,6 +180,7 @@
     margin-bottom: 18px;
     width: 100%;
     justify-content: center;
+    flex-shrink: 0;
   }
   .new-chat-btn:hover{ background: var(--terracotta-deep); }
 
@@ -190,6 +192,19 @@
     font-weight: 600;
     padding: 4px 8px;
     margin-top: 6px;
+    flex-shrink: 0;
+  }
+
+  /* Hanya list riwayat chat ini yang bisa di-scroll, bukan seluruh sidebar.
+     flex:1 1 auto supaya dia mengisi sisa ruang antara header dan footer,
+     min-height:0 WAJIB di sini supaya flex item boleh menyusut lebih kecil
+     dari konten aslinya (tanpa ini, overflow-y:auto tidak akan pernah efektif
+     di dalam flex column dan sidebar-footer akan terdorong keluar layar). */
+  #historyList{
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .history-item{
@@ -210,6 +225,7 @@
     margin-top:auto;
     padding-top: 14px;
     border-top: 1px solid var(--line);
+    flex-shrink: 0;
   }
 
   .api-status{
@@ -3240,6 +3256,10 @@
               messages: data.messages || [],
               updatedAt: data.updatedAt || 0
             };
+            // Catat juga sebagai snapshot "sudah tersimpan" supaya nanti kalau
+            // chat ini dibuka tanpa ada perubahan apapun, scheduleSaveConversation
+            // tidak menganggapnya berubah dan tidak menulis ulang / bump updatedAt.
+            LAST_SAVED_SNAPSHOT[id] = convContentSnapshot(conversations[id]);
           }
         });
         renderHistory();
@@ -3257,6 +3277,18 @@
       convsCollectionUnsub();
       convsCollectionUnsub = null;
     }
+  }
+
+  // Menyimpan snapshot (JSON string) terakhir yang berhasil disimpan ke
+  // Firestore untuk tiap convId. Dipakai supaya "membuka" sebuah chat lama
+  // dari riwayat (yang otomatis memanggil renderChat -> scheduleSaveConversation)
+  // TIDAK ikut membuat updatedAt-nya berubah kalau memang tidak ada perubahan
+  // isi (pesan/judul) sama sekali — jadi item itu tidak melompat ke atas list
+  // riwayat hanya karena dibuka/dilihat.
+  const LAST_SAVED_SNAPSHOT = {}; // convId -> JSON string {title, messages}
+
+  function convContentSnapshot(conv){
+    return JSON.stringify({ title: conv.title, messages: conv.messages });
   }
 
   // Dipanggil tiap kali data percakapan berubah (pesan baru, judul baru, dst).
@@ -3283,6 +3315,13 @@
     ids.forEach(id => {
       const conv = conversations[id];
       if(!conv) return; // sudah dihapus sebelum sempat tersimpan
+      // Kalau isi (judul + pesan) persis sama dengan snapshot terakhir yang
+      // sukses tersimpan, berarti tidak ada perubahan nyata (mis. chat ini
+      // cuma dibuka/dilihat dari riwayat) — lewati, JANGAN bump updatedAt dan
+      // JANGAN tulis ulang ke Firestore.
+      const snapshot = convContentSnapshot(conv);
+      if(LAST_SAVED_SNAPSHOT[id] === snapshot) return;
+
       conv.updatedAt = Date.now();
       const payload = {
         title: conv.title,
@@ -3297,11 +3336,14 @@
         console.warn('[Farvion] Percakapan "' + conv.title + '" mendekati/melebihi batas ukuran dokumen Firestore (~1MB) karena lampiran base64. Tidak disimpan ke cloud kali ini.');
         return;
       }
-      convDocRef(uid, id).set(payload).catch(err => {
+      convDocRef(uid, id).set(payload).then(() => {
+        LAST_SAVED_SNAPSHOT[id] = snapshot;
+      }).catch(err => {
         console.error('[Farvion] Gagal simpan percakapan ke Firestore:', err);
       });
     });
   }
+
 
   // Panggil ini setiap kali sebuah percakapan dihapus dari state lokal supaya
   // dokumennya juga terhapus di Firestore (mis. dari fitur hapus riwayat di masa depan).
@@ -5317,7 +5359,33 @@
     closeSidebar();
   }
 
+  // Batas maksimal jumlah percakapan yang disimpan di riwayat (sidebar).
+  // Kalau melebihi ini, percakapan PALING LAMA (berdasarkan updatedAt) akan
+  // otomatis dihapus — baik dari state lokal maupun dari Firestore (kalau user
+  // sedang login) — supaya sidebar tidak membengkak tak terbatas terutama di
+  // HP dengan storage/memori terbatas.
+  const MAX_HISTORY_ITEMS = 10;
+
+  // Buang percakapan paling lama kalau jumlah total (yang tidak kosong)
+  // melebihi MAX_HISTORY_ITEMS. Chat yang sedang aktif (currentConvId) TIDAK
+  // pernah dihapus otomatis meski dia yang paling lama — supaya user tidak
+  // tiba-tiba kehilangan percakapan yang sedang dibaca/dipakai.
+  function enforceHistoryLimit(){
+    const nonEmptyIds = Object.keys(conversations)
+      .filter(id => conversations[id].messages.length > 0)
+      .sort((a, b) => (conversations[b].updatedAt || 0) - (conversations[a].updatedAt || 0)); // terbaru dulu
+
+    if(nonEmptyIds.length <= MAX_HISTORY_ITEMS) return;
+
+    const idsToRemove = nonEmptyIds.slice(MAX_HISTORY_ITEMS).filter(id => id !== currentConvId);
+    idsToRemove.forEach(id => {
+      delete conversations[id];
+      deleteConversationFromCloud(id);
+    });
+  }
+
   function renderHistory(){
+    enforceHistoryLimit();
     const list = document.getElementById('historyList');
     list.innerHTML = '';
     Object.keys(conversations)
@@ -6155,6 +6223,14 @@
   }
 
   async function runGithubToolLoop(conv, initialContents){
+    // ====== DEBUG SEMENTARA ======
+    // Kumpulan log diagnostik untuk fungsi ini. Kalau tool loop gagal/fallback
+    // ke jalur chat biasa, isi log ini akan ditempelkan sebagai bubble AI
+    // terpisah supaya kelihatan langsung di layar HP (tanpa perlu console/DevTools).
+    // TODO: hapus FARVION_DEBUG_LOG dan semua pemanggilannya setelah masalah
+    // "kenapa tool GitHub/Notion tidak terpanggil" ini selesai didiagnosis.
+    const FARVION_DEBUG_LOG = [];
+
     const githubToken = localStorage.getItem(GITHUB_TOKEN_KEY);
     const notionToken = localStorage.getItem(NOTION_ACCESS_TOKEN_KEY);
     if(!githubToken && !notionToken) return false;
@@ -6164,9 +6240,24 @@
     const lastUserParts = initialContents[initialContents.length - 1]?.parts || [];
     const lastUserText = lastUserParts.filter(p => typeof p.text === 'string').map(p => p.text).join(' ');
     const likelyIntent = messageMatchesGithubNotionIntent(lastUserText);
+    FARVION_DEBUG_LOG.push('pesan="' + lastUserText.slice(0,80) + '", likelyIntent=' + likelyIntent + ', githubConnected=' + !!githubToken + ', notionConnected=' + !!notionToken);
 
     const githubUsername = localStorage.getItem(GITHUB_USER_KEY);
     const usernameHint = githubUsername ? `\n\nUsername GitHub user yang sedang terhubung: ${githubUsername}.` : '';
+
+    // ====== DEBUG SEMENTARA ======
+    // Tempelkan isi FARVION_DEBUG_LOG sebagai bubble AI terpisah (bukan error,
+    // supaya tidak dianggap gagal total) sebelum fallback ke jalur chat biasa.
+    // TODO: hapus fungsi ini bareng FARVION_DEBUG_LOG setelah selesai debug.
+    function surfaceDebugLogAndFallthrough(){
+      if(FARVION_DEBUG_LOG.length){
+        conv.messages.push({
+          role: 'ai',
+          text: '🔧 DEBUG (sementara):\n' + FARVION_DEBUG_LOG.map((l, i) => (i+1) + '. ' + l).join('\n')
+        });
+      }
+      return false;
+    }
 
     // Gabungkan addendum & function declarations hanya untuk provider yang
     // benar-benar terhubung, supaya model tidak mencoba memanggil tool dari
@@ -6200,12 +6291,31 @@
       // Giliran berikutnya (setelah minimal 1 tool sukses dipakai) juga selalu
       // 'AUTO' supaya Gemini bisa berhenti dan memberi jawaban final normal.
       const functionCallingMode = (iteration === 0 && likelyIntent) ? 'ANY' : 'AUTO';
-      const result = await fetchGeminiWithRetry(GEMINI_TOOL_MODEL, {
+      let result = await fetchGeminiWithRetry(GEMINI_TOOL_MODEL, {
         contents,
         systemInstruction,
         tools: [{ functionDeclarations: toolDeclarations }],
         toolConfig: { functionCallingConfig: { mode: functionCallingMode } }
       });
+
+      FARVION_DEBUG_LOG.push('iterasi ' + iteration + ', mode=' + functionCallingMode + ', ok=' + result.ok + (result.ok ? '' : (', status=' + result.status)));
+
+      // Sebagian model/versi API bisa menolak mode 'ANY' (mis. HTTP 400) walau
+      // tool declarations-nya valid. Kalau itu terjadi PERSIS di permintaan
+      // dengan mode 'ANY', coba sekali lagi dengan 'AUTO' sebelum menyerah —
+      // supaya user tetap dapat kesempatan tool-calling normal alih-alih
+      // langsung jatuh ke jalur chat biasa (yang bisa menghasilkan jawaban
+      // generik "ada gangguan teknis").
+      if(!result.ok && functionCallingMode === 'ANY'){
+        FARVION_DEBUG_LOG.push('mode ANY gagal (status ' + result.status + '), retry dengan AUTO...');
+        result = await fetchGeminiWithRetry(GEMINI_TOOL_MODEL, {
+          contents,
+          systemInstruction,
+          tools: [{ functionDeclarations: toolDeclarations }],
+          toolConfig: { functionCallingConfig: { mode: 'AUTO' } }
+        });
+        FARVION_DEBUG_LOG.push('retry AUTO -> ok=' + result.ok + (result.ok ? '' : (', status=' + result.status)));
+      }
 
       if(!result.ok){
         // Gagal setelah semua retry. Kalau sebelumnya sempat berhasil pakai
@@ -6218,15 +6328,17 @@
         }
         // Belum sempat pakai tool sama sekali — lanjutkan ke jalur streaming
         // normal, supaya user tetap dapat jawaban (meski tanpa data GitHub/Notion).
-        return false;
+        FARVION_DEBUG_LOG.push('SEMUA gagal (status akhir=' + result.status + '), fallback ke chat biasa.');
+        return surfaceDebugLogAndFallthrough();
       }
 
       const data = result.data;
       const parts = data?.candidates?.[0]?.content?.parts || [];
       const callPart = parts.find(p => p.functionCall);
       if(!callPart){
+        FARVION_DEBUG_LOG.push('API ok TAPI TIDAK ADA functionCall. finishReason=' + (data?.candidates?.[0]?.finishReason || '?') + ', parts=' + JSON.stringify(parts).slice(0, 500));
         // Gemini tidak (lagi) minta tool apapun.
-        if(!usedAnyTool) return false; // dari awal memang bukan intent GitHub/Notion — lanjut jalur normal
+        if(!usedAnyTool){ FARVION_DEBUG_LOG.push('fallback ke chat biasa (belum sempat pakai tool sama sekali).'); return surfaceDebugLogAndFallthrough(); } // dari awal memang bukan intent GitHub/Notion — lanjut jalur normal
         // Sudah sempat pakai tool sebelumnya tapi giliran ini nggak ada functionCall:
         // ambil teks yang ada (kalau ada) sebagai jawaban final, lalu render langsung
         // (tanpa stream, karena responsnya sudah lengkap dari panggilan non-stream ini).
