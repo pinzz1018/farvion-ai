@@ -6314,6 +6314,14 @@
     // supaya tidak dianggap gagal total) sebelum fallback ke jalur chat biasa.
     // TODO: hapus fungsi ini bareng FARVION_DEBUG_LOG setelah selesai debug.
     function surfaceDebugLogAndFallthrough(){
+      // Bersihkan placeholder loading kosong (didorong oleh sendMessage sebelum
+      // memanggil fungsi ini) SEBELUM menambah bubble debug, supaya placeholder
+      // itu tidak "ketinggalan" di tengah percakapan dengan loading:true selamanya
+      // — yang menyebabkan pinwheel animasi tetap muncul walau jawaban sudah selesai.
+      const lastMsg = conv.messages[conv.messages.length - 1];
+      if(lastMsg && lastMsg.role === 'ai' && lastMsg.loading){
+        conv.messages.pop();
+      }
       if(FARVION_DEBUG_LOG.length){
         conv.messages.push({
           role: 'ai',
@@ -6465,7 +6473,10 @@
           finishGithubToolConversation(conv, t('errors.geminiGeneric'));
           return true;
         }
-        return false; // biarkan jalur streaming normal yang menangani
+        // Belum sempat pakai tool sama sekali di iterasi ini — lanjut ke jalur
+        // streaming normal. Placeholder loading dari sendMessage masih utuh
+        // (belum pernah dimodifikasi di titik ini), jadi aman langsung fallback.
+        return false;
       }
 
       // Tool read-only: eksekusi langsung, tanpa konfirmasi. Tentukan handler
