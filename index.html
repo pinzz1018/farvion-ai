@@ -6344,7 +6344,10 @@
   }
 
   // Panggil model gemini-2.5-flash-image (gratis) untuk generate satu gambar
-  // dari prompt teks. Mengembalikan { ok, dataUrl, mimeType } atau { ok:false, ... }.
+  // dari prompt teks. Mengembalikan { ok, dataUrl, mimeType } atau
+  // { ok:false, blocked, ... } — "blocked:true" khusus untuk kasus prompt/hasil
+  // ditolak safety filter Google (beda dari kegagalan teknis biasa: network,
+  // rate limit, timeout, dll), supaya pesan ke user bisa dibedakan.
   // Selalu memakai GEMINI_IMAGE_MODEL, TIDAK PERNAH model chat yang sedang aktif
   // dipilih user (Nova 1.0 / 1.0 Flash) — supaya pilihan model chat user tidak
   // pernah berubah/ke-switch akibat permintaan gambar.
@@ -6358,10 +6361,27 @@
       return { ok: false, status: result.status, bodyText: result.bodyText, err: result.err };
     }
 
+    // Prompt bisa diblokir SEBELUM generate dimulai (promptFeedback.blockReason,
+    // mis. "PROHIBITED_CONTENT", "SAFETY"), atau hasilnya diblokir SETELAH
+    // generate (candidates[0].finishReason, mis. "SAFETY", "IMAGE_SAFETY",
+    // "PROHIBITED_CONTENT"). Keduanya sinyal resmi dari Gemini API, bukan
+    // tebakan kita — dipakai untuk membedakan pesan "ditolak kebijakan" vs
+    // "gagal teknis biasa" ke user.
+    const blockReason = result.data?.promptFeedback?.blockReason;
+    const finishReason = result.data?.candidates?.[0]?.finishReason;
+    const SAFETY_FINISH_REASONS = new Set(['SAFETY', 'PROHIBITED_CONTENT', 'IMAGE_SAFETY', 'BLOCKLIST', 'SPII']);
+    const isBlocked = !!blockReason || SAFETY_FINISH_REASONS.has(finishReason);
+
     const parts = result.data?.candidates?.[0]?.content?.parts || [];
     const imagePart = parts.find(p => p.inlineData && p.inlineData.data);
     if(!imagePart){
-      return { ok: false, err: 'Respons tidak mengandung data gambar (kemungkinan diblokir safety filter atau prompt tidak didukung).' };
+      return {
+        ok: false,
+        blocked: isBlocked,
+        err: isBlocked
+          ? `Diblokir safety filter Gemini (blockReason=${blockReason || '-'}, finishReason=${finishReason || '-'}).`
+          : 'Respons tidak mengandung data gambar (kemungkinan prompt tidak didukung atau gangguan sesaat).'
+      };
     }
     const mimeType = imagePart.inlineData.mimeType || 'image/png';
     return { ok: true, dataUrl: `data:${mimeType};base64,${imagePart.inlineData.data}`, mimeType };
@@ -6452,14 +6472,13 @@
 
   // ====== Tool loop: generate_image ======
   // Berbeda dari GitHub/Notion (yang butuh koneksi eksternal dulu), tool ini
-  // SELALU aktif untuk semua user. Karena hanya ada 1 tool dan tidak perlu
-  // multi-iterasi baca-lalu-baca-lagi seperti GitHub, mode function-calling
-  // yang dipakai selalu 'AUTO' (Gemini bebas memilih: jawab teks biasa —
-  // termasuk menanyakan balik "gambar apa yang diinginkan" — ATAU langsung
-  // panggil generate_image kalau deskripsi sudah ada di pesan user manapun,
-  // termasuk sebagai jawaban singkat atas pertanyaan balik itu, karena seluruh
-  // riwayat percakapan selalu ikut terkirim di 'contents'). Ini menghindari
-  // maksa panggil tool untuk pesan yang sama sekali tidak berkaitan.
+  // SELALU aktif untuk semua user. Mode function-calling dipilih dinamis lewat
+  // messageMatchesImageGenIntent(): 'ANY' (wajib panggil tool) untuk permintaan
+  // yang sudah jelas ("buatkan gambar elang"), atau 'AUTO' (Gemini bebas
+  // menjawab teks biasa, termasuk menanyakan balik deskripsi) untuk pertanyaan
+  // kapabilitas ("kamu bisa buat gambar ga?") atau follow-up singkat yang
+  // konteksnya diambil dari riwayat percakapan (mis. "kucing" setelah Farvion
+  // menanyakan balik gambar apa yang diinginkan).
   //
   // Return true kalau alur ini yang menangani (baik generate gambar berhasil
   // MAUPUN Gemini memilih menjawab teks biasa lewat tool ini, mis. menanyakan
@@ -6467,15 +6486,75 @@
   // jadi sendMessage TIDAK perlu lanjut ke streamGeminiReply lagi.
   // Return false hanya kalau terjadi kegagalan teknis (network/API error) yang
   // membuat kita ingin fallback ke jalur chat biasa alih-alih menampilkan error.
+  // Kata kunci ringan (ID + EN) untuk deteksi awal apakah pesan user KEMUNGKINAN
+  // BESAR permintaan gambar yang sudah lengkap (bukan sekadar nanya "bisa bikin
+  // gambar ga?"). Kalau match, mode function-calling dipaksa 'ANY' supaya Gemini
+  // TIDAK BISA menjawab dengan teks biasa (mis. menyarankan Midjourney/DALL-E,
+  // atau memberi link gambar stok) — dia wajib memanggil tool generate_image.
+  // Kalau tidak match, tetap pakai 'AUTO' supaya Gemini bebas menjawab teks biasa
+  // (termasuk untuk pertanyaan "apakah kamu bisa bikin gambar" yang belum berisi
+  // deskripsi apapun) tanpa dipaksa generate sesuatu yang belum jelas.
+  //
+  // STRONG: kata kerja pembuatan eksplisit ("buatkan", "gambarkan", "draw", dst)
+  // atau pola "generate/create/make + image/picture/photo". Cukup sendirian
+  // untuk memicu 'ANY' — KECUALI kalimatnya ternyata tetap berbentuk pertanyaan
+  // kapabilitas (mis. "could you draw a dog?", "can you create images?").
+  // GENERIC: kata benda umum ("gambar", "foto", dst) yang sering muncul juga di
+  // pertanyaan kapabilitas — HANYA memicu 'ANY' kalau bukan pertanyaan kapabilitas.
+  const IMAGE_GEN_STRONG_KEYWORDS = [
+    'gambarkan', 'gambarin', 'lukiskan', 'bikinkan', 'buatkan',
+    'draw', 'drawing', 'illustrate', 'illustration', 'picture of', 'image of', 'photo of'
+  ];
+  const IMAGE_GEN_STRONG_PATTERN = /\b(generate|create|make)\s+(an?\s+)?(image|picture|photo)\b/i;
+  const IMAGE_GEN_GENERIC_KEYWORDS = ['gambar', 'foto', 'ilustrasi', 'lukis'];
+  // Pola pertanyaan kapabilitas ID + EN: "bisa...ga/gak/nggak/tidak", "apakah
+  // kamu bisa", "kamu bisa...?", "can/could you...?", "are you able". Dicek
+  // TANPA \b penutup di ujung alternation, karena sebagian cabang sudah diakhiri
+  // karakter non-word (mis. "?") yang membuat \b gagal cocok kalau dipaksakan.
+  const CAPABILITY_QUESTION_PATTERN = /\b(bisa(kah)?\b.*\bga(k|ppa)?\b|bisa(kah)?\b.*\bnggak\b|bisa(kah)?\b.*\btidak\b|apakah\s+kamu\s+bisa|apa\s+kamu\s+bisa|kamu\s+bisa\b[^.!]*\?|can\s+you\b[^.!]*\?|could\s+you\b[^.!]*\?|are\s+you\s+able)/i;
+
+  function messageMatchesImageGenIntent(text){
+    const lower = (text || '').toLowerCase();
+    const isCapabilityQuestion = CAPABILITY_QUESTION_PATTERN.test(text || '');
+    if(IMAGE_GEN_STRONG_KEYWORDS.some(kw => lower.includes(kw)) || IMAGE_GEN_STRONG_PATTERN.test(text || '')){
+      return !isCapabilityQuestion;
+    }
+    const hasGenericKeyword = IMAGE_GEN_GENERIC_KEYWORDS.some(kw => lower.includes(kw));
+    if(!hasGenericKeyword) return false;
+    if(isCapabilityQuestion) return false;
+    return true;
+  }
+
   async function runImageGenToolLoop(conv, initialContents){
     const systemInstruction = { parts: [{ text: IMAGE_GEN_TOOL_SYSTEM_ADDENDUM + '\n\n---\n\n' + FARVION_SYSTEM_PROMPT }] };
 
-    const result = await fetchGeminiWithRetry(GEMINI_TOOL_MODEL, {
+    const lastUserPartsForIntent = initialContents[initialContents.length - 1]?.parts || [];
+    const lastUserTextForIntent = lastUserPartsForIntent.filter(p => typeof p.text === 'string').map(p => p.text).join(' ');
+    // "gambar" saja (tanpa kata kerja/objek) sering muncul di pertanyaan seperti
+    // "apakah kamu bisa buat gambar?" — untuk kasus itu kita TETAP mau 'AUTO'
+    // (biar Gemini bisa nanya balik), bukan 'ANY'. Jadi keyword generik seperti
+    // "gambar"/"foto" saja HANYA memicu 'ANY' kalau disertai kata kerja pembuatan
+    // (buatkan/gambarkan/dst) atau frasa "gambar X" dengan X bukan kata tanya.
+    const forceToolCall = messageMatchesImageGenIntent(lastUserTextForIntent);
+
+    let result = await fetchGeminiWithRetry(GEMINI_TOOL_MODEL, {
       contents: initialContents,
       systemInstruction,
       tools: [{ functionDeclarations: [IMAGE_GEN_TOOL_DECLARATION] }],
-      toolConfig: { functionCallingConfig: { mode: 'AUTO' } }
+      toolConfig: { functionCallingConfig: { mode: forceToolCall ? 'ANY' : 'AUTO' } }
     });
+
+    // Sebagian model/versi API bisa menolak mode 'ANY' (mis. HTTP 400). Kalau
+    // terjadi PERSIS di permintaan dengan mode 'ANY', coba sekali lagi dengan
+    // 'AUTO' sebelum menyerah total ke fallback chat biasa.
+    if(!result.ok && forceToolCall){
+      result = await fetchGeminiWithRetry(GEMINI_TOOL_MODEL, {
+        contents: initialContents,
+        systemInstruction,
+        tools: [{ functionDeclarations: [IMAGE_GEN_TOOL_DECLARATION] }],
+        toolConfig: { functionCallingConfig: { mode: 'AUTO' } }
+      });
+    }
 
     if(!result.ok){
       // Gagal teknis (network/429/5xx dll) — fallback ke jalur chat biasa,
@@ -6534,9 +6613,18 @@
 
     if(!imageResult.ok){
       console.log('[Farvion] generateImageWithGemini gagal:', imageResult);
-      const failMsg = looksLikeIndonesian(lastUserText)
-        ? 'Maaf, gambar gagal dibuat. Coba lagi dengan deskripsi yang sedikit berbeda ya.'
-        : 'Sorry, the image failed to generate. Try again with a slightly different description.';
+      const isId = looksLikeIndonesian(lastUserText);
+      const failMsg = imageResult.blocked
+        // Ditolak safety filter Google — beri tahu secara jujur & sopan bahwa
+        // permintaan ini tidak bisa dibuat karena melanggar kebijakan konten,
+        // bukan "gagal" yang menyiratkan bisa berhasil kalau dicoba ulang persis
+        // sama. Tidak merinci kategori kebijakan spesifik ke user.
+        ? (isId
+            ? 'Maaf, aku tidak bisa membuat gambar untuk permintaan ini karena melanggar kebijakan konten. Coba ubah deskripsinya ya.'
+            : 'Sorry, I can\'t create an image for this request as it violates content policy. Try a different description.')
+        : (isId
+            ? 'Maaf, gambar gagal dibuat karena gangguan teknis. Coba kirim ulang permintaannya ya.'
+            : 'Sorry, the image failed to generate due to a technical issue. Please try again.');
       finishGithubToolConversation(conv, failMsg);
       return true;
     }
