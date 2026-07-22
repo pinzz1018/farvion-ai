@@ -1871,20 +1871,34 @@
   }
   .msg-generated-image-download svg{ width:16px; height:16px; }
   .msg-generated-image-download:active{ background: rgba(0,0,0,0.75); }
-  /* Skeleton shimmer sementara gambar sedang di-generate (sebelum data base64 tiba) */
+  /* Placeholder gambar sedang di-generate (sebelum data base64 tiba) — kotak
+     besar dengan pola titik-titik berdenyut di tengah, ala ChatGPT, supaya
+     langsung jelas bahwa yang sedang berjalan adalah pembuatan gambar,
+     bukan sekadar "loading teks" biasa. */
   .msg-generated-image-loading{
     width: 100%;
     aspect-ratio: 1 / 1;
     max-width: 320px;
     border-radius: 16px;
-    background: linear-gradient(100deg, rgba(43,38,32,0.06) 30%, rgba(43,38,32,0.12) 50%, rgba(43,38,32,0.06) 70%);
-    background-size: 200% 100%;
-    animation: farvion-img-shimmer 1.4s ease-in-out infinite;
+    background: rgba(43,38,32,0.05);
     margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  @keyframes farvion-img-shimmer{
-    0%{ background-position: 200% 0; }
-    100%{ background-position: -200% 0; }
+  .msg-generated-image-loading::before{
+    content:'';
+    width: 60%;
+    height: 60%;
+    background-image: radial-gradient(rgba(43,38,32,0.35) 1.6px, transparent 1.6px);
+    background-size: 10px 10px;
+    -webkit-mask-image: radial-gradient(circle, #000 55%, transparent 80%);
+    mask-image: radial-gradient(circle, #000 55%, transparent 80%);
+    animation: farvion-img-dots-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes farvion-img-dots-pulse{
+    0%, 100%{ opacity: 0.35; transform: scale(0.94); }
+    50%{ opacity: 0.9; transform: scale(1); }
   }
 
   ::-webkit-scrollbar{ width:8px; }
@@ -5961,7 +5975,13 @@
           : '';
 
         const bubbleInnerHtml = showPinwheel
-          ? '<div class="typing-dots">' + (msg.toolStatus ? '<button type="button" class="tool-status-row" onclick="openToolDetailModal(' + msgIndex + ', this)"><div class="tool-status-icon">' + toolIconSvg(msg.toolName) + '</div><div class="tool-status-text">' + escapeHtml(msg.toolStatus) + '</div></button>' : '') + '<div class="loading-pinwheel">' + pinwheelLogoSvg() + '</div></div>'
+          ? (generatedImagesHtml
+              // Kalau sedang generate gambar (msg.generatedImages berisi placeholder
+              // loading), tampilkan skeleton shimmer besar ala ChatGPT SEBAGAI GANTI
+              // pill teks + pinwheel kecil — bukan keduanya sekaligus. Skeleton lebih
+              // jelas menunjukkan "lagi bikin gambar" daripada pill status generik.
+              ? generatedImagesHtml
+              : '<div class="typing-dots">' + (msg.toolStatus ? '<button type="button" class="tool-status-row" onclick="openToolDetailModal(' + msgIndex + ', this)"><div class="tool-status-icon">' + toolIconSvg(msg.toolName) + '</div><div class="tool-status-text">' + escapeHtml(msg.toolStatus) + '</div></button>' : '') + '<div class="loading-pinwheel">' + pinwheelLogoSvg() + '</div></div>')
           : (msg.error
               ? generatedImagesHtml + '<div class="error-note">' + escapeHtml(msg.text) + '</div>'
               : (msg.toolHistory && msg.toolHistory.length ? '<button type="button" class="tool-status-row tool-status-row-done" onclick="openToolDetailModal(' + msgIndex + ', this)"><div class="tool-status-icon">' + toolIconSvg(msg.toolHistory[msg.toolHistory.length-1].tool) + '</div><div class="tool-status-text tool-status-text-done">' + escapeHtml(msg.toolHistory[msg.toolHistory.length-1].status) + '</div></button>' : '') + generatedImagesHtml + renderMarkdown(msg.text));
@@ -6614,6 +6634,10 @@
     if(!imageResult.ok){
       console.log('[Farvion] generateImageWithGemini gagal:', imageResult);
       const isId = looksLikeIndonesian(lastUserText);
+      // --- DEBUG SEMENTARA: tampilkan detail error asli langsung di chat,
+      // supaya bisa didiagnosis dari HP tanpa perlu buka devtools. Hapus blok
+      // ini (dan baris debugDetail di bawah) setelah masalah 401 selesai. ---
+      const debugDetail = '\n\n[DEBUG] status=' + (imageResult.status ?? '-') + ' err=' + (imageResult.err ?? '-') + ' body=' + (imageResult.bodyText ? imageResult.bodyText.slice(0, 500) : '-');
       const failMsg = imageResult.blocked
         // Ditolak safety filter Google — beri tahu secara jujur & sopan bahwa
         // permintaan ini tidak bisa dibuat karena melanggar kebijakan konten,
@@ -6623,8 +6647,8 @@
             ? 'Maaf, aku tidak bisa membuat gambar untuk permintaan ini karena melanggar kebijakan konten. Coba ubah deskripsinya ya.'
             : 'Sorry, I can\'t create an image for this request as it violates content policy. Try a different description.')
         : (isId
-            ? 'Maaf, gambar gagal dibuat karena gangguan teknis. Coba kirim ulang permintaannya ya.'
-            : 'Sorry, the image failed to generate due to a technical issue. Please try again.');
+            ? 'Maaf, gambar gagal dibuat karena gangguan teknis. Coba kirim ulang permintaannya ya.' + debugDetail
+            : 'Sorry, the image failed to generate due to a technical issue. Please try again.' + debugDetail);
       finishGithubToolConversation(conv, failMsg);
       return true;
     }
