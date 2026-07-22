@@ -1840,6 +1840,53 @@
   }
   .msg-attachment-badge svg{ width:13px; height:13px; flex-shrink:0; }
 
+  /* ==== Gambar hasil generate AI (image generation tool) — tampil besar
+     inline di bubble, mirip gaya ChatGPT: full-width, rounded, dengan
+     tombol download kecil di pojok saat gambar sudah selesai dimuat. ==== */
+  .msg-generated-image-wrap{
+    position: relative;
+    margin-bottom: 8px;
+    border-radius: 16px;
+    overflow: hidden;
+    max-width: 320px;
+    background: rgba(43,38,32,0.05);
+  }
+  .msg-generated-image-wrap img{
+    display:block;
+    width: 100%;
+    height: auto;
+    border-radius: 16px;
+  }
+  .msg-generated-image-download{
+    position:absolute;
+    bottom:8px; right:8px;
+    width:32px; height:32px;
+    border-radius:50%;
+    background: rgba(0,0,0,0.55);
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    border:none;
+    cursor:pointer;
+    backdrop-filter: blur(4px);
+  }
+  .msg-generated-image-download svg{ width:16px; height:16px; }
+  .msg-generated-image-download:active{ background: rgba(0,0,0,0.75); }
+  /* Skeleton shimmer sementara gambar sedang di-generate (sebelum data base64 tiba) */
+  .msg-generated-image-loading{
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-width: 320px;
+    border-radius: 16px;
+    background: linear-gradient(100deg, rgba(43,38,32,0.06) 30%, rgba(43,38,32,0.12) 50%, rgba(43,38,32,0.06) 70%);
+    background-size: 200% 100%;
+    animation: farvion-img-shimmer 1.4s ease-in-out infinite;
+    margin-bottom: 8px;
+  }
+  @keyframes farvion-img-shimmer{
+    0%{ background-position: 200% 0; }
+    100%{ background-position: -200% 0; }
+  }
+
   ::-webkit-scrollbar{ width:8px; }
   ::-webkit-scrollbar-thumb{ background: #D8CFC0; border-radius:10px; }
   ::-webkit-scrollbar-track{ background:transparent; }
@@ -5826,6 +5873,20 @@
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  // Unduh satu gambar hasil generate (dataUrl base64) sebagai file ke perangkat user.
+  function downloadGeneratedImage(msgIndex, imgIdx){
+    const conv = currentConvId ? conversations[currentConvId] : null;
+    const msg = conv && conv.messages[msgIndex];
+    const img = msg && msg.generatedImages && msg.generatedImages[imgIdx];
+    if(!img || !img.dataUrl) return;
+    const a = document.createElement('a');
+    a.href = img.dataUrl;
+    a.download = `farvion-image-${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
   // Simple markdown-ish renderer: code blocks, inline code, bold, paragraphs
   function renderMarkdown(text){
     let escaped = escapeHtml(text);
@@ -5879,9 +5940,35 @@
             </button>
           </div>
         ` : '';
+
+        // Render gambar hasil generate (kalau ada) — muncul sebelum teks markdown,
+        // sama seperti pola ChatGPT (gambar dulu, keterangan/teks di bawahnya).
+        // Setiap entri generatedImages: { dataUrl, mimeType, loading:true/false }
+        // "loading" dipakai untuk skeleton shimmer sementara base64 belum tiba.
+        const generatedImagesHtml = (msg.generatedImages && msg.generatedImages.length)
+          ? msg.generatedImages.map((img, imgIdx) => {
+              if(img.loading || !img.dataUrl){
+                return '<div class="msg-generated-image-loading"></div>';
+              }
+              return `
+                <div class="msg-generated-image-wrap">
+                  <img src="${img.dataUrl}" alt="${escapeHtml(img.alt || 'Gambar hasil generate')}">
+                  <button type="button" class="msg-generated-image-download" onclick="downloadGeneratedImage(${msgIndex}, ${imgIdx})" aria-label="Unduh gambar" title="Unduh gambar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                </div>`;
+            }).join('')
+          : '';
+
+        const bubbleInnerHtml = showPinwheel
+          ? '<div class="typing-dots">' + (msg.toolStatus ? '<button type="button" class="tool-status-row" onclick="openToolDetailModal(' + msgIndex + ', this)"><div class="tool-status-icon">' + toolIconSvg(msg.toolName) + '</div><div class="tool-status-text">' + escapeHtml(msg.toolStatus) + '</div></button>' : '') + '<div class="loading-pinwheel">' + pinwheelLogoSvg() + '</div></div>'
+          : (msg.error
+              ? generatedImagesHtml + '<div class="error-note">' + escapeHtml(msg.text) + '</div>'
+              : (msg.toolHistory && msg.toolHistory.length ? '<button type="button" class="tool-status-row tool-status-row-done" onclick="openToolDetailModal(' + msgIndex + ', this)"><div class="tool-status-icon">' + toolIconSvg(msg.toolHistory[msg.toolHistory.length-1].tool) + '</div><div class="tool-status-text tool-status-text-done">' + escapeHtml(msg.toolHistory[msg.toolHistory.length-1].status) + '</div></button>' : '') + generatedImagesHtml + renderMarkdown(msg.text));
+
         row.innerHTML = `
           <div class="msg-ai-col">
-            <div class="msg-bubble">${showPinwheel ? '<div class="typing-dots">' + (msg.toolStatus ? '<button type="button" class="tool-status-row" onclick="openToolDetailModal(' + msgIndex + ', this)"><div class="tool-status-icon">' + toolIconSvg(msg.toolName) + '</div><div class="tool-status-text">' + escapeHtml(msg.toolStatus) + '</div></button>' : '') + '<div class="loading-pinwheel">' + pinwheelLogoSvg() + '</div></div>' : (msg.error ? '<div class="error-note">' + escapeHtml(msg.text) + '</div>' : (msg.toolHistory && msg.toolHistory.length ? '<button type="button" class="tool-status-row tool-status-row-done" onclick="openToolDetailModal(' + msgIndex + ', this)"><div class="tool-status-icon">' + toolIconSvg(msg.toolHistory[msg.toolHistory.length-1].tool) + '</div><div class="tool-status-text tool-status-text-done">' + escapeHtml(msg.toolHistory[msg.toolHistory.length-1].status) + '</div></button>' : '') + renderMarkdown(msg.text))}</div>
+            <div class="msg-bubble">${bubbleInnerHtml}</div>
             ${actionsHtml}
           </div>
         `;
@@ -5948,6 +6035,14 @@
       }));
       const currentParts = buildMessageParts(lastMsg);
       const contents = [...history, { role: 'user', parts: currentParts }];
+
+      // Cek dulu apakah pesan user ini mengandung niat generate gambar (baik
+      // permintaan langsung, maupun jawaban singkat atas pertanyaan "gambar apa
+      // yang diinginkan" yang sebelumnya ditanyakan Farvion). Tool ini SELALU
+      // aktif untuk semua user (tidak bergantung koneksi eksternal seperti
+      // GitHub/Notion), jadi dicek paling awal sebelum tool lain.
+      const handledByImageGen = await runImageGenToolLoop(conv, contents);
+      if(handledByImageGen) return;
 
       // Cek dulu apakah pesan user ini mengandung niat menggunakan salah satu
       // tool GitHub (list repo, browse folder, baca file, atau push). Kalau iya
@@ -6112,6 +6207,27 @@
     'read_notion_page'
   ]);
 
+  // ====== Image generation (generate_image tool) ======
+  // Model khusus untuk generate gambar. Selalu gemini-2.5-flash-image (gratis),
+  // TERPISAH dari model chat teks yang sedang dipilih user (Farvion Nova 1.0 /
+  // Farvion 1.0 Flash) — dipanggil sekali per permintaan gambar, tidak pernah
+  // menggantikan/mengubah pilihan model chat utama user.
+  const GEMINI_IMAGE_MODEL = 'gemini-2.5-flash-image';
+
+  const IMAGE_GEN_TOOL_SYSTEM_ADDENDUM = "PENTING soal GENERATE GAMBAR: kamu PUNYA kemampuan nyata untuk membuat/generate gambar dari deskripsi teks lewat tool generate_image. Ini BUKAN keterbatasan seperti asisten AI berbasis teks pada umumnya — kamu benar-benar bisa menghasilkan gambar sungguhan lewat integrasi yang sudah dibangun di Farvion, JANGAN PERNAH bilang 'aku tidak bisa membuat gambar' atau menyarankan user pakai tool/aplikasi lain.\n\nATURAN ALUR PERCAKAPAN — SANGAT PENTING, ikuti persis:\n1. Kalau user baru bertanya APAKAH kamu bisa membuat gambar (misal 'bisa bikin gambar ga?', 'kamu bisa generate image?', 'can you create images?') TANPA menyebutkan gambar apa yang diinginkan — JANGAN langsung panggil tool generate_image. Jawab dengan teks biasa yang mengonfirmasi kemampuanmu dengan antusias, lalu tanyakan balik gambar apa yang ingin dibuat (contoh versi Indonesia: 'Tentu, aku bisa bikin gambar! Gambar apa yang ingin kamu buat?'; versi Inggris: 'Sure, I can generate images! What would you like me to create?'). Sesuaikan bahasa jawaban dengan bahasa pesan user.\n2. Begitu user merespons dengan deskripsi gambar apapun — walau cuma satu-dua kata seperti 'kucing' atau 'cat', atau kalimat lengkap seperti 'buatkan gambar kucing oren lucu' — di pesan manapun (baik langsung di awal, maupun sebagai jawaban atas pertanyaan 'gambar apa yang diinginkan' dari kamu sebelumnya), kamu WAJIB langsung panggil tool generate_image dengan parameter 'prompt' yang sudah kamu perkaya/detailkan sedikit dari deskripsi singkat user tersebut (dalam BAHASA INGGRIS untuk hasil gambar terbaik, apapun bahasa percakapannya) — JANGAN bertanya balik lagi minta detail tambahan kecuali benar-benar tidak ada petunjuk sama sekali soal objek yang diminta.\n3. Kamu WAJIB menyertakan SATU baris teks status singkat (maksimal 6 kata, present tense, dalam bahasa yang sama dengan pesan terakhir user, TANPA tanda kutip) sebagai bagian 'text' pada respons yang SAMA sebelum function call generate_image — contoh Indonesia: 'Membuat gambar kucing...'; contoh Inggris: 'Creating a cat image...'.\n4. SETELAH tool generate_image mengembalikan hasil (berhasil), balas dengan kalimat singkat yang ramah menyertai gambar yang sudah ditampilkan ke user (misal 'Ini gambarnya! Ada yang mau diubah?' / 'Here it is! Want any changes?') — JANGAN mendeskripsikan ulang gambarnya secara detail dalam teks, karena gambarnya sudah langsung terlihat oleh user.\n5. Kalau tool generate_image gagal/error, minta maaf singkat dan sarankan user coba lagi dengan deskripsi yang sedikit berbeda, JANGAN menyalahkan diri sendiri secara berlebihan.\n\nParameter 'prompt' untuk tool generate_image harus deskriptif dan detail (gaya visual, warna, komposisi, suasana) berdasarkan apa yang diminta user, ditulis dalam bahasa Inggris supaya kualitas hasil generate maksimal, meskipun percakapan dengan user memakai bahasa lain.";
+
+  const IMAGE_GEN_TOOL_DECLARATION = {
+    name: 'generate_image',
+    description: 'Membuat/generate sebuah gambar baru berdasarkan deskripsi teks (text-to-image). Gunakan setiap kali user meminta gambar dibuat, atau setelah user menjawab pertanyaan "gambar apa yang diinginkan" dengan deskripsi apapun.',
+    parameters: {
+      type: 'object',
+      properties: {
+        prompt: { type: 'string', description: 'Deskripsi detail gambar yang akan dibuat, ditulis dalam BAHASA INGGRIS (terlepas dari bahasa percakapan), mencakup subjek, gaya visual, warna, komposisi, dan suasana jika relevan.' }
+      },
+      required: ['prompt']
+    }
+  };
+
   const MAX_TOOL_CALL_ITERATIONS = 5; // batas aman supaya tidak infinite loop kalau Gemini terus manggil tool
 
   // Model yang dipakai untuk deteksi tool-call (list repo/browse/baca file/push).
@@ -6227,35 +6343,83 @@
     return { ok: false, ...lastError };
   }
 
+  // Panggil model gemini-2.5-flash-image (gratis) untuk generate satu gambar
+  // dari prompt teks. Mengembalikan { ok, dataUrl, mimeType } atau { ok:false, ... }.
+  // Selalu memakai GEMINI_IMAGE_MODEL, TIDAK PERNAH model chat yang sedang aktif
+  // dipilih user (Nova 1.0 / 1.0 Flash) — supaya pilihan model chat user tidak
+  // pernah berubah/ke-switch akibat permintaan gambar.
+  async function generateImageWithGemini(prompt){
+    const result = await fetchGeminiWithRetry(GEMINI_IMAGE_MODEL, {
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { responseModalities: ['IMAGE'] }
+    }, { timeoutMs: 45000, maxRetries: 2 }); // timeout lebih panjang dari chat biasa karena generate gambar lebih lambat
+
+    if(!result.ok){
+      return { ok: false, status: result.status, bodyText: result.bodyText, err: result.err };
+    }
+
+    const parts = result.data?.candidates?.[0]?.content?.parts || [];
+    const imagePart = parts.find(p => p.inlineData && p.inlineData.data);
+    if(!imagePart){
+      return { ok: false, err: 'Respons tidak mengandung data gambar (kemungkinan diblokir safety filter atau prompt tidak didukung).' };
+    }
+    const mimeType = imagePart.inlineData.mimeType || 'image/png';
+    return { ok: true, dataUrl: `data:${mimeType};base64,${imagePart.inlineData.data}`, mimeType };
+  }
+
   // State sementara untuk menyimpan functionCall yang sedang menunggu
   // konfirmasi user lewat modal (Iya/Tidak).
   let pendingGithubPushCall = null; // { args, conv, contents }
 
+  // Deteksi bahasa sangat sederhana berbasis kata kunci umum. Tidak sempurna,
+  // tapi cukup untuk membedakan "pesan berbahasa Indonesia" vs "bukan" demi
+  // memilih fallback status text yang wajar — cukup untuk kasus mayoritas
+  // (Indonesia vs Inggris) yang jadi dua bahasa utama pengguna Farvion.
+  function looksLikeIndonesian(text){
+    if(!text) return true; // default Indonesia kalau tidak ada info bahasa sama sekali
+    const t = text.toLowerCase();
+    const idHints = /\b(saya|aku|gw|gue|kamu|lu|apa|yang|dan|ini|itu|tolong|bisa|coba|cek|lihat|punya|repo(sitory)?ku|milikku|nya|di|ke|dari|untuk|dengan|adalah|bagaimana|kenapa|gimana)\b/;
+    const enHints = /\b(the|is|are|my|your|please|check|show|list|can|could|would|what|how|why|repository|repo|file|folder)\b/;
+    const idMatches = (t.match(idHints) || []).length;
+    const enMatches = (t.match(enHints) || []).length;
+    if(idMatches === 0 && enMatches === 0) return true; // tidak ada sinyal jelas, default Indonesia
+    return idMatches >= enMatches;
+  }
+
   // Fallback teks status ("sedang ngapain") per nama tool GitHub, dipakai kalau
   // Gemini tidak menyertakan teks status sendiri di respons function-call-nya
   // (harusnya jarang terjadi karena sudah diinstruksikan di system addendum,
-  // tapi tetap perlu jaga-jaga supaya UI tidak kosong).
-  function githubToolStatusFallback(name, args){
+  // tapi tetap perlu jaga-jaga supaya UI tidak kosong). Dipilih otomatis antara
+  // versi Indonesia/Inggris berdasarkan bahasa pesan terakhir user, supaya tidak
+  // selalu Indonesia walau user menulis dalam bahasa lain.
+  function githubToolStatusFallback(name, args, userText){
     const a = args || {};
+    const isId = looksLikeIndonesian(userText);
     switch(name){
       case 'list_github_repos':
-        return 'Melihat daftar repository...';
+        return isId ? 'Melihat daftar repository...' : 'Listing repositories...';
       case 'list_github_directory':
-        return a.path ? `Membuka folder "${a.path}"...` : `Membuka isi repo ${a.owner || ''}/${a.repo || ''}...`.trim();
+        if(isId) return a.path ? `Membuka folder "${a.path}"...` : `Membuka isi repo ${a.owner || ''}/${a.repo || ''}...`.trim();
+        return a.path ? `Opening folder "${a.path}"...` : `Opening repo ${a.owner || ''}/${a.repo || ''}...`.trim();
       case 'read_github_file':
-        return a.path ? `Membaca file "${a.path}"...` : 'Membaca file di GitHub...';
+        if(isId) return a.path ? `Membaca file "${a.path}"...` : 'Membaca file di GitHub...';
+        return a.path ? `Reading file "${a.path}"...` : 'Reading file on GitHub...';
       case 'push_file_to_github':
-        return a.path ? `Menyiapkan push "${a.path}"...` : 'Menyiapkan push ke GitHub...';
+        if(isId) return a.path ? `Menyiapkan push "${a.path}"...` : 'Menyiapkan push ke GitHub...';
+        return a.path ? `Preparing push "${a.path}"...` : 'Preparing push to GitHub...';
       case 'search_github_code':
-        return a.query ? `Mencari kode "${a.query}"...` : 'Mencari kode di GitHub...';
+        if(isId) return a.query ? `Mencari kode "${a.query}"...` : 'Mencari kode di GitHub...';
+        return a.query ? `Searching code "${a.query}"...` : 'Searching code on GitHub...';
       case 'list_notion_pages':
-        return 'Melihat daftar halaman Notion...';
+        return isId ? 'Melihat daftar halaman Notion...' : 'Listing Notion pages...';
       case 'query_notion_database':
-        return a.database_name ? `Membuka database "${a.database_name}"...` : 'Membuka database Notion...';
+        if(isId) return a.database_name ? `Membuka database "${a.database_name}"...` : 'Membuka database Notion...';
+        return a.database_name ? `Opening database "${a.database_name}"...` : 'Opening Notion database...';
       case 'read_notion_page':
-        return a.page_name ? `Membaca halaman "${a.page_name}"...` : 'Membaca halaman Notion...';
+        if(isId) return a.page_name ? `Membaca halaman "${a.page_name}"...` : 'Membaca halaman Notion...';
+        return a.page_name ? `Reading page "${a.page_name}"...` : 'Reading Notion page...';
       default:
-        return 'Menggunakan tool...';
+        return isId ? 'Menggunakan tool...' : 'Using tool...';
     }
   }
 
@@ -6286,6 +6450,134 @@
     return GITHUB_NOTION_INTENT_KEYWORDS.some(kw => lower.includes(kw));
   }
 
+  // ====== Tool loop: generate_image ======
+  // Berbeda dari GitHub/Notion (yang butuh koneksi eksternal dulu), tool ini
+  // SELALU aktif untuk semua user. Karena hanya ada 1 tool dan tidak perlu
+  // multi-iterasi baca-lalu-baca-lagi seperti GitHub, mode function-calling
+  // yang dipakai selalu 'AUTO' (Gemini bebas memilih: jawab teks biasa —
+  // termasuk menanyakan balik "gambar apa yang diinginkan" — ATAU langsung
+  // panggil generate_image kalau deskripsi sudah ada di pesan user manapun,
+  // termasuk sebagai jawaban singkat atas pertanyaan balik itu, karena seluruh
+  // riwayat percakapan selalu ikut terkirim di 'contents'). Ini menghindari
+  // maksa panggil tool untuk pesan yang sama sekali tidak berkaitan.
+  //
+  // Return true kalau alur ini yang menangani (baik generate gambar berhasil
+  // MAUPUN Gemini memilih menjawab teks biasa lewat tool ini, mis. menanyakan
+  // balik detail gambar) — dalam kedua kasus jawaban sudah ditampilkan di sini,
+  // jadi sendMessage TIDAK perlu lanjut ke streamGeminiReply lagi.
+  // Return false hanya kalau terjadi kegagalan teknis (network/API error) yang
+  // membuat kita ingin fallback ke jalur chat biasa alih-alih menampilkan error.
+  async function runImageGenToolLoop(conv, initialContents){
+    const systemInstruction = { parts: [{ text: IMAGE_GEN_TOOL_SYSTEM_ADDENDUM + '\n\n---\n\n' + FARVION_SYSTEM_PROMPT }] };
+
+    const result = await fetchGeminiWithRetry(GEMINI_TOOL_MODEL, {
+      contents: initialContents,
+      systemInstruction,
+      tools: [{ functionDeclarations: [IMAGE_GEN_TOOL_DECLARATION] }],
+      toolConfig: { functionCallingConfig: { mode: 'AUTO' } }
+    });
+
+    if(!result.ok){
+      // Gagal teknis (network/429/5xx dll) — fallback ke jalur chat biasa,
+      // supaya user tetap dapat jawaban lewat streamGeminiReply alih-alih
+      // langsung gagal total hanya karena giliran deteksi tool ini bermasalah.
+      console.log('[Farvion] runImageGenToolLoop gagal, fallback ke chat biasa. status=', result.status || result.err);
+      return false;
+    }
+
+    const parts = result.data?.candidates?.[0]?.content?.parts || [];
+    const callPart = parts.find(p => p.functionCall && p.functionCall.name === 'generate_image');
+
+    if(!callPart){
+      // Gemini memilih TIDAK memanggil tool (mis. sekadar menjawab "ya aku bisa
+      // bikin gambar, gambar apa yang kamu mau?", atau pesan user memang tidak
+      // ada kaitan dengan gambar sama sekali). Tampilkan teks jawabannya sebagai
+      // bubble biasa dengan efek ngetik, sama seperti alur chat normal.
+      const textPieces = parts.filter(p => !p.thought && typeof p.text === 'string').map(p => p.text).join('');
+      if(!textPieces){
+        // Tidak ada teks maupun tool call — kemungkinan besar bukan intent
+        // gambar sama sekali, fallback ke jalur chat biasa yang lebih umum.
+        return false;
+      }
+      finishGithubToolConversation(conv, textPieces); // fungsi generik, tetap valid dipakai lintas jenis tool
+      return true;
+    }
+
+    // Gemini memutuskan untuk generate gambar.
+    const callArgs = callPart.functionCall.args || {};
+    const prompt = (callArgs.prompt || '').trim();
+    if(!prompt){
+      finishGithubToolConversation(conv, t('errors.geminiGeneric'));
+      return true;
+    }
+
+    const lastUserParts = initialContents[initialContents.length - 1]?.parts || [];
+    const lastUserText = lastUserParts.filter(p => typeof p.text === 'string').map(p => p.text).join(' ');
+    const statusTextRaw = parts
+      .filter(p => !p.functionCall && !p.thought && typeof p.text === 'string')
+      .map(p => p.text.trim())
+      .filter(Boolean)
+      .join(' ');
+    const toolStatus = statusTextRaw || (looksLikeIndonesian(lastUserText) ? 'Membuat gambar...' : 'Creating image...');
+
+    // Update bubble loading supaya menampilkan status "Membuat gambar..." dan
+    // skeleton shimmer selagi generate_image sedang berjalan.
+    const loadingMsg = conv.messages.find(m => m.loading);
+    if(loadingMsg){
+      loadingMsg.toolStatus = toolStatus;
+      loadingMsg.toolName = 'generate_image';
+      loadingMsg.generatedImages = [{ loading: true }];
+      renderChat();
+    }
+
+    const imageResult = await generateImageWithGemini(prompt);
+
+    if(!imageResult.ok){
+      console.log('[Farvion] generateImageWithGemini gagal:', imageResult);
+      const failMsg = looksLikeIndonesian(lastUserText)
+        ? 'Maaf, gambar gagal dibuat. Coba lagi dengan deskripsi yang sedikit berbeda ya.'
+        : 'Sorry, the image failed to generate. Try again with a slightly different description.';
+      finishGithubToolConversation(conv, failMsg);
+      return true;
+    }
+
+    // Susun teks pendamping singkat (bukan deskripsi ulang gambar, cukup kalimat
+    // ramah) lewat panggilan kedua ke model chat biasa, menyertakan hasil
+    // functionResponse supaya Gemini tahu gambar sudah berhasil dibuat.
+    const followupContents = [
+      ...initialContents,
+      { role: 'model', parts: [{ functionCall: { name: 'generate_image', args: callArgs } }] },
+      { role: 'function', parts: [{ functionResponse: { name: 'generate_image', response: { result: 'Gambar berhasil dibuat dan sudah ditampilkan langsung ke user.' } } }] }
+    ];
+    const followupResult = await fetchGeminiWithRetry(GEMINI_TOOL_MODEL, {
+      contents: followupContents,
+      systemInstruction
+    });
+    const followupText = followupResult.ok
+      ? (followupResult.data?.candidates?.[0]?.content?.parts || []).filter(p => !p.thought && typeof p.text === 'string').map(p => p.text).join('')
+      : '';
+    const finalText = followupText || (looksLikeIndonesian(lastUserText) ? 'Ini gambarnya! Ada yang mau diubah?' : 'Here it is! Want any changes?');
+
+    // Tampilkan bubble final berisi gambar + teks pendamping.
+    const loadingIdx = conv.messages.findIndex(m => m.loading);
+    if(loadingIdx !== -1) conv.messages.splice(loadingIdx, 1);
+    conv.messages.push({
+      role: 'ai',
+      text: '',
+      streaming: true,
+      generatedImages: [{ dataUrl: imageResult.dataUrl, mimeType: imageResult.mimeType, alt: prompt }]
+    });
+    renderChat();
+    resetTypingState();
+    const aiMsg = conv.messages[conv.messages.length - 1];
+    updateStreamingBubble(finalText);
+    await flushTypingQueue();
+    aiMsg.text = finalText;
+    aiMsg.streaming = false;
+    renderChat();
+    return true;
+  }
+
   async function runGithubToolLoop(conv, initialContents){
     // ====== DEBUG SEMENTARA ======
     // Kumpulan log diagnostik untuk fungsi ini. Kalau tool loop gagal/fallback
@@ -6309,24 +6601,15 @@
     const githubUsername = localStorage.getItem(GITHUB_USER_KEY);
     const usernameHint = githubUsername ? `\n\nUsername GitHub user yang sedang terhubung: ${githubUsername}.` : '';
 
-    // ====== DEBUG SEMENTARA ======
-    // Tempelkan isi FARVION_DEBUG_LOG sebagai bubble AI terpisah (bukan error,
-    // supaya tidak dianggap gagal total) sebelum fallback ke jalur chat biasa.
-    // TODO: hapus fungsi ini bareng FARVION_DEBUG_LOG setelah selesai debug.
+    // Fungsi ini dulu sempat menampilkan FARVION_DEBUG_LOG sebagai bubble chat
+    // untuk keperluan diagnosis 429/rate-limit & fallback tool-loop. Sekarang
+    // log itu hanya dicatat ke console (tidak lagi tampil ke user). Placeholder
+    // loading dari sendMessage SENGAJA dibiarkan utuh di sini — streamGeminiReply
+    // yang dipanggil sesudah fallback ini butuh placeholder tersebut untuk lanjut
+    // ke jalur chat normal (menghapusnya di sini justru menyebabkan error lain).
     function surfaceDebugLogAndFallthrough(){
-      // Bersihkan placeholder loading kosong (didorong oleh sendMessage sebelum
-      // memanggil fungsi ini) SEBELUM menambah bubble debug, supaya placeholder
-      // itu tidak "ketinggalan" di tengah percakapan dengan loading:true selamanya
-      // — yang menyebabkan pinwheel animasi tetap muncul walau jawaban sudah selesai.
-      const lastMsg = conv.messages[conv.messages.length - 1];
-      if(lastMsg && lastMsg.role === 'ai' && lastMsg.loading){
-        conv.messages.pop();
-      }
       if(FARVION_DEBUG_LOG.length){
-        conv.messages.push({
-          role: 'ai',
-          text: '🔧 DEBUG (sementara):\n' + FARVION_DEBUG_LOG.map((l, i) => (i+1) + '. ' + l).join('\n')
-        });
+        console.log('[Farvion] GitHub/Notion tool loop fallback:', FARVION_DEBUG_LOG);
       }
       return false;
     }
@@ -6396,7 +6679,8 @@
         // tetap membantu — bukan pesan error teknis.
         if(usedAnyTool){
           FARVION_DEBUG_LOG.push('Gagal di iterasi LANJUTAN (setelah tool dipakai). status=' + result.status);
-          finishGithubToolConversation(conv, '🔧 DEBUG (sementara):\n' + FARVION_DEBUG_LOG.map((l, i) => (i+1) + '. ' + l).join('\n') + '\n\n' + t('errors.geminiGeneric'));
+          console.log('[Farvion] GitHub/Notion tool loop gagal di iterasi lanjutan:', FARVION_DEBUG_LOG);
+          finishGithubToolConversation(conv, t('errors.geminiGeneric'));
           return true;
         }
         // Belum sempat pakai tool sama sekali — lanjutkan ke jalur streaming
@@ -6431,7 +6715,7 @@
         .map(p => p.text.trim())
         .filter(Boolean)
         .join(' ');
-      const toolStatus = statusTextRaw || githubToolStatusFallback(name, callArgs);
+      const toolStatus = statusTextRaw || githubToolStatusFallback(name, callArgs, lastUserText);
 
       // Update bubble loading yang sedang tampil supaya menunjukkan status ini
       // (pinwheel tetap berputar, teks shimmer muncul di bawahnya) sebelum tool
